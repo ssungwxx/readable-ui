@@ -2,26 +2,62 @@ import {
   Page,
   Heading,
   Paragraph,
-  List,
-  ListItem,
   Link,
   Card,
   Form,
   Input,
+  Select,
   Button,
   Alert,
+  Table,
 } from "@readable-ui/react/components";
 import type { Envelope } from "@readable-ui/react";
 
+interface User extends Record<string, unknown> {
+  id: string;
+  email: string;
+  role: "admin" | "user";
+}
+
+const sampleUsers: User[] = [
+  { id: "u_alice_01", email: "alice@example.com", role: "admin" },
+  { id: "u_bob_01", email: "bob@example.com", role: "user" },
+  { id: "u_carol_01", email: "carol@example.com", role: "user" },
+];
+
 export const usersEnvelope: Envelope = {
   title: "User management",
-  purpose: "Admin CRUD for users",
+  purpose: "Admin page to list, create, update, and delete user accounts.",
   role: "admin",
   layout: "flow",
+  paths: {
+    view: "/users",
+    markdown: "/users.md",
+  },
+  updatedAt: "2026-04-17T00:00:00Z",
+  constraints: [
+    {
+      id: "delete-irreversible",
+      severity: "danger",
+      text: "Deleting a user is permanent and cannot be undone.",
+    },
+    {
+      id: "audit-log",
+      severity: "info",
+      text: "All mutations here are recorded in the audit log.",
+    },
+  ],
+  pagination: {
+    page: 1,
+    perPage: 20,
+    total: sampleUsers.length,
+  },
   tools: [
     {
       name: "createUser",
-      description: "Create a new user",
+      title: "Create user",
+      description: "Create a new user.",
+      role: "admin",
       input: {
         type: "object",
         properties: {
@@ -33,8 +69,24 @@ export const usersEnvelope: Envelope = {
       },
     },
     {
+      name: "updateUser",
+      title: "Update user",
+      description: "Update a user's role.",
+      role: "admin",
+      input: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          role: { type: "string", enum: ["admin", "user"] },
+        },
+        required: ["id"],
+      },
+    },
+    {
       name: "deleteUser",
-      description: "Permanently delete a user by id",
+      title: "Delete user",
+      description: "Permanently delete a user by id.",
+      role: "admin",
       input: {
         type: "object",
         properties: { id: { type: "string" } },
@@ -53,35 +105,56 @@ export function UsersPage() {
         <Link href="/users.md">Markdown view</Link> for the AI-facing version.
       </Paragraph>
 
-      <Alert kind="note">
-        Deleting a user is permanent. Confirmation required for production data.
+      <Alert kind="caution">
+        Deleting a user is permanent and cannot be undone.
       </Alert>
 
       <Card title="Existing users">
-        <List>
-          <ListItem>
-            Alice &lt;alice@example.com&gt; — admin
-          </ListItem>
-          <ListItem>
-            Bob &lt;bob@example.com&gt; — user
-          </ListItem>
-          <ListItem>
-            Carol &lt;carol@example.com&gt; — user
-          </ListItem>
-        </List>
+        <Table<User>
+          columns={[
+            { key: "email", label: "Email" },
+            { key: "role", label: "Role" },
+          ]}
+          rows={sampleUsers}
+          actions={[
+            {
+              tool: "updateUser",
+              label: "Edit",
+              params: (r) => ({ id: r.id }),
+            },
+            {
+              tool: "deleteUser",
+              label: "Delete",
+              variant: "danger",
+              params: (r) => ({ id: r.id }),
+            },
+          ]}
+        />
       </Card>
 
       <Card title="Create a new user">
         <Form action="createUser">
-          <Input name="name" label="Name" required placeholder="Jane Doe" />
+          <Input
+            name="name"
+            label="Name"
+            required
+            minLength={1}
+            placeholder="Jane Doe"
+          />
           <Input
             name="email"
             type="email"
+            format="email"
             label="Email"
             required
             placeholder="jane@example.com"
           />
-          <Input name="role" label="Role (admin | user)" required />
+          <Select
+            name="role"
+            label="Role"
+            options={["admin", "user"]}
+            required
+          />
           <Button action="createUser">Create user</Button>
         </Form>
       </Card>

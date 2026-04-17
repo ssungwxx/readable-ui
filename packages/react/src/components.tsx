@@ -20,6 +20,15 @@ function inlineFromChildren(children: ReactNode, ctx: SerializeContext): MdNode[
   return text ? [{ type: "text", value: text } as MdNode] : [];
 }
 
+function buildActionURI(
+  tool: string,
+  params: Record<string, string | number | boolean> = {}
+): string {
+  const entries = Object.entries(params).map(([k, v]) => [k, String(v)] as [string, string]);
+  const qs = new URLSearchParams(entries).toString();
+  return `mcp://tool/${tool}${qs ? `?${qs}` : ""}`;
+}
+
 export interface PageProps {
   children: ReactNode;
 }
@@ -168,12 +177,29 @@ export const Button = defineDualComponent<ButtonProps>({
   toMarkdown: ({ action, variant, children }, ctx) => {
     ctx.registerAction(action);
     const label = asText(children) || action;
-    return {
+    const url = buildActionURI(action);
+
+    const directive: MdNode = {
       type: "leafDirective",
       name: "button",
       attributes: { action, ...(variant ? { variant } : {}) },
       children: [{ type: "text", value: label } as MdNode] as never,
     };
+
+    const linkParagraph: MdNode = {
+      type: "paragraph",
+      children: [
+        {
+          type: "link",
+          url,
+          children: [{ type: "text", value: label }],
+        } as MdNode,
+      ] as never,
+    };
+
+    if (ctx.fallback === "off") return directive;
+    if (ctx.fallback === "link-only") return linkParagraph;
+    return [directive, linkParagraph];
   },
 });
 
@@ -198,21 +224,28 @@ export const Form = defineDualComponent<FormProps>({
       type: "containerDirective",
       name: "form",
       attributes: { action },
-      children: ctx.walk(children) as never,
+      children: ctx.walk(children, { fallback: "off" }) as never,
     };
   },
 });
 
 export interface InputProps {
   name: string;
-  type?: "text" | "email" | "password" | "number" | "url" | "date" | "datetime-local";
+  type?: "text" | "email" | "password" | "number" | "url" | "date" | "datetime-local" | "tel" | "search";
   label?: string;
   required?: boolean;
   placeholder?: string;
+  pattern?: string;
+  minLength?: number;
+  maxLength?: number;
+  min?: number | string;
+  max?: number | string;
+  step?: number | string;
+  format?: string;
 }
 export const Input = defineDualComponent<InputProps>({
   name: "input",
-  render: ({ name, type = "text", label, required, placeholder }) => (
+  render: ({ name, type = "text", label, required, placeholder, pattern, minLength, maxLength, min, max, step }) => (
     <label className="flex flex-col gap-1 text-sm">
       {label ? (
         <span className="text-gray-700">
@@ -225,19 +258,81 @@ export const Input = defineDualComponent<InputProps>({
         type={type}
         required={required}
         placeholder={placeholder}
+        pattern={pattern}
+        minLength={minLength}
+        maxLength={maxLength}
+        min={min}
+        max={max}
+        step={step}
         className="rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
       />
     </label>
   ),
-  toMarkdown: ({ name, type, label, required, placeholder }) => {
+  toMarkdown: ({ name, type, label, required, placeholder, pattern, minLength, maxLength, min, max, step, format }) => {
     const attrs: Record<string, string> = { name };
     if (type && type !== "text") attrs.type = type;
     if (label) attrs.label = label;
     if (placeholder) attrs.placeholder = placeholder;
-    if (required) attrs.required = "true";
+    if (pattern) attrs.pattern = pattern;
+    if (minLength != null) attrs.minlength = String(minLength);
+    if (maxLength != null) attrs.maxlength = String(maxLength);
+    if (min != null) attrs.min = String(min);
+    if (max != null) attrs.max = String(max);
+    if (step != null) attrs.step = String(step);
+    if (format) attrs.format = format;
+    if (required) attrs.required = "";
     return {
       type: "leafDirective",
       name: "input",
+      attributes: attrs,
+      children: [] as never,
+    };
+  },
+});
+
+export interface SelectProps {
+  name: string;
+  options: string[];
+  label?: string;
+  required?: boolean;
+  multiple?: boolean;
+}
+export const Select = defineDualComponent<SelectProps>({
+  name: "select",
+  render: ({ name, options, label, required, multiple }) => (
+    <label className="flex flex-col gap-1 text-sm">
+      {label ? (
+        <span className="text-gray-700">
+          {label}
+          {required ? <span className="text-red-600"> *</span> : null}
+        </span>
+      ) : null}
+      <select
+        name={name}
+        required={required}
+        multiple={multiple}
+        className="rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+      >
+        <option value="">Select…</option>
+        {options.map((v) => (
+          <option key={v} value={v}>
+            {v}
+          </option>
+        ))}
+      </select>
+    </label>
+  ),
+  toMarkdown: ({ name, options, label, required, multiple }) => {
+    const attrs: Record<string, string> = {
+      name,
+      options: options.join(","),
+    };
+    if (label) attrs.label = label;
+    if (multiple) attrs.multiple = "";
+    if (required) attrs.required = "";
+    return {
+      type: "leafDirective",
+      name: "select",
       attributes: attrs,
       children: [] as never,
     };
@@ -267,12 +362,172 @@ export const Alert = defineDualComponent<AlertProps>({
   },
   toMarkdown: ({ kind, children }, ctx) => ({
     type: "blockquote",
-    children: [
-      {
-        type: "paragraph",
-        children: [{ type: "text", value: `[!${kind.toUpperCase()}]` } as MdNode] as never,
-      },
-      ...ctx.walk(children),
-    ] as never,
+    data: { gfmAlert: kind },
+    children: ctx.walk(children) as never,
   }),
 });
+
+export interface TableColumn<R> {
+  key: keyof R & string;
+  label: string;
+  align?: "left" | "center" | "right";
+}
+
+export interface TableRowAction<R> {
+  tool: string;
+  label: string;
+  variant?: "primary" | "secondary" | "danger";
+  params: (row: R) => Record<string, string | number | boolean>;
+}
+
+export interface TableProps<R extends { id: string | number }> {
+  columns: TableColumn<R>[];
+  rows: R[];
+  actions?: TableRowAction<R>[];
+  showIdColumn?: boolean;
+  caption?: string;
+}
+
+type AnyRow = { id: string | number; [k: string]: unknown };
+
+const TableImpl = defineDualComponent<TableProps<AnyRow>>({
+  name: "table",
+  render: ({ columns, rows, actions = [], showIdColumn = true, caption }) => (
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      {caption ? (
+        <div className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border-b border-gray-200">
+          {caption}
+        </div>
+      ) : null}
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 text-gray-700">
+          <tr>
+            {showIdColumn ? <th className="px-4 py-2 text-left font-medium">id</th> : null}
+            {columns.map((c) => (
+              <th key={c.key} className={`px-4 py-2 font-medium text-${c.align ?? "left"}`}>
+                {c.label}
+              </th>
+            ))}
+            {actions.length ? (
+              <th className="px-4 py-2 text-left font-medium">Actions</th>
+            ) : null}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={String(r.id)} data-rui-id={String(r.id)} className="border-t border-gray-100">
+              {showIdColumn ? (
+                <td className="px-4 py-2 text-xs text-gray-500 font-mono">{String(r.id)}</td>
+              ) : null}
+              {columns.map((c) => (
+                <td key={c.key} className={`px-4 py-2 text-${c.align ?? "left"}`}>
+                  {String(r[c.key] ?? "")}
+                </td>
+              ))}
+              {actions.length ? (
+                <td className="px-4 py-2 space-x-2">
+                  {actions.map((a) => {
+                    const color =
+                      a.variant === "danger"
+                        ? "text-red-600"
+                        : a.variant === "secondary"
+                          ? "text-gray-600"
+                          : "text-blue-600";
+                    const url = buildActionURI(a.tool, a.params(r));
+                    return (
+                      <a
+                        key={a.tool}
+                        href={url}
+                        data-action={a.tool}
+                        className={`${color} underline hover:no-underline`}
+                      >
+                        {a.label}
+                      </a>
+                    );
+                  })}
+                </td>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ),
+  toMarkdown: ({ columns, rows, actions = [], showIdColumn = true }, ctx) => {
+    for (const a of actions) ctx.registerAction(a.tool);
+
+    const textCell = (value: string): MdNode => ({
+      type: "tableCell",
+      children: [{ type: "text", value } as MdNode] as never,
+    });
+
+    const headerRow: MdNode = {
+      type: "tableRow",
+      children: [
+        ...(showIdColumn ? [textCell("id")] : []),
+        ...columns.map((c) => textCell(c.label)),
+        ...(actions.length ? [textCell("Actions")] : []),
+      ] as never,
+    };
+
+    const bodyRows: MdNode[] = rows.map((r) => {
+      const actionChildren: MdNode[] = actions.flatMap((a, i) => {
+        const url = buildActionURI(a.tool, a.params(r));
+        const link: MdNode = {
+          type: "link",
+          url,
+          children: [{ type: "text", value: a.label } as MdNode] as never,
+        };
+        return i > 0 ? [{ type: "text", value: " · " } as MdNode, link] : [link];
+      });
+
+      return {
+        type: "tableRow",
+        children: [
+          ...(showIdColumn
+            ? [
+                {
+                  type: "tableCell",
+                  children: [{ type: "text", value: String(r.id) } as MdNode] as never,
+                } as MdNode,
+              ]
+            : []),
+          ...columns.map(
+            (c) =>
+              ({
+                type: "tableCell",
+                children: [{ type: "text", value: String(r[c.key] ?? "") } as MdNode] as never,
+              }) as MdNode
+          ),
+          ...(actions.length
+            ? [
+                {
+                  type: "tableCell",
+                  children: actionChildren as never,
+                } as MdNode,
+              ]
+            : []),
+        ] as never,
+      };
+    });
+
+    const align: ("left" | "center" | "right")[] = [
+      ...(showIdColumn ? (["left"] as const) : []),
+      ...columns.map((c) => c.align ?? "left"),
+      ...(actions.length ? (["left"] as const) : []),
+    ];
+
+    return {
+      type: "table",
+      align,
+      children: [headerRow, ...bodyRows] as never,
+    };
+  },
+});
+
+export function Table<R extends { id: string | number }>(props: TableProps<R>): ReactNode {
+  return TableImpl(props as unknown as TableProps<AnyRow>);
+}
+Table.spec = TableImpl.spec;
+(Table as unknown as { __readable: true }).__readable = true;
+Table.displayName = "table";

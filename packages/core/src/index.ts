@@ -1,38 +1,45 @@
 import type { ReactElement, ReactNode } from "react";
-import type { Root, RootContent } from "mdast";
+import type { Blockquote, Root, RootContent } from "mdast";
 import type {
   ContainerDirective,
   LeafDirective,
   TextDirective,
 } from "mdast-util-directive";
-import { toMarkdown } from "mdast-util-to-markdown";
+import { toMarkdown, type Options as ToMdOptions, type Handle } from "mdast-util-to-markdown";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import { directiveToMarkdown } from "mdast-util-directive";
 import { stringify as stringifyYaml } from "yaml";
+import { parseEnvelope, type Envelope } from "./envelope.js";
+
+export {
+  EnvelopeZ,
+  EnvelopeToolZ,
+  PaginationZ,
+  PathsZ,
+  ConstraintZ,
+  JsonSchemaSubsetZ,
+  EnvelopeError,
+  parseEnvelope,
+} from "./envelope.js";
+export type {
+  Envelope,
+  EnvelopeTool,
+  Constraint,
+  Pagination,
+  Paths,
+} from "./envelope.js";
 
 type DirectiveNode = ContainerDirective | LeafDirective | TextDirective;
 export type MdNode = RootContent | DirectiveNode;
 
-export interface Envelope {
-  title: string;
-  purpose?: string;
-  role?: string | string[];
-  layout?: string;
-  tools?: EnvelopeTool[];
-}
-
-export interface EnvelopeTool {
-  name: string;
-  description?: string;
-  input?: Record<string, unknown>;
-  role?: string | string[];
-}
+export type FallbackMode = "on" | "off" | "link-only";
 
 export interface SerializeContext {
   depth: number;
-  walk: (node: unknown) => MdNode[];
+  walk: (node: unknown, override?: { fallback?: FallbackMode }) => MdNode[];
   envelope: Envelope | undefined;
   registerAction: (name: string) => void;
+  fallback: FallbackMode;
 }
 
 export interface DualComponentSpec<P> {
@@ -71,20 +78,29 @@ function isReactElement(value: unknown): value is ReactLike {
 export interface WalkOptions {
   envelope?: Envelope;
   onAction?: (name: string) => void;
+  fallback?: FallbackMode;
 }
 
 export function walkTree(root: unknown, options: WalkOptions = {}): MdNode[] {
-  const usedActions = new Set<string>();
-  const ctx: SerializeContext = {
+  const base = {
     depth: 0,
     envelope: options.envelope,
-    walk: (node) => walkNode(node, ctx),
-    registerAction: (name) => {
-      usedActions.add(name);
-      options.onAction?.(name);
-    },
+    registerAction: (name: string) => options.onAction?.(name),
+    fallback: options.fallback ?? "on",
   };
-  return walkNode(root, ctx);
+  const makeCtx = (fallback: FallbackMode): SerializeContext => {
+    const ctx: SerializeContext = {
+      ...base,
+      fallback,
+      walk: (node, override) => {
+        const next = override?.fallback ?? fallback;
+        return walkNode(node, next === fallback ? ctx : makeCtx(next));
+      },
+    };
+    return ctx;
+  };
+  const root_ctx = makeCtx(base.fallback);
+  return walkNode(root, root_ctx);
 }
 
 function walkNode(node: unknown, ctx: SerializeContext): MdNode[] {
@@ -127,24 +143,75 @@ function walkNode(node: unknown, ctx: SerializeContext): MdNode[] {
   return [];
 }
 
-export function serializeTree(nodes: MdNode[]): string {
-  const root: Root = { type: "root", children: nodes };
-  return toMarkdown(root, {
-    extensions: [gfmToMarkdown(), directiveToMarkdown()],
-    bullet: "-",
-    fences: true,
-  });
+type AlertKind = "note" | "tip" | "important" | "warning" | "caution";
+
+interface GfmAlertBlockquote extends Blockquote {
+  data?: { gfmAlert?: AlertKind };
 }
 
-export function renderMarkdown(root: ReactNode | ReactElement): string {
-  const nodes = walkTree(root);
+const gfmAlertHandler: Handle = (node, _parent, state, info) => {
+  const bq = node as GfmAlertBlockquote;
+  const kind = bq.data?.gfmAlert;
+  if (!kind) {
+    const children = state.containerFlow(node as Blockquote, info);
+    return state.indentLines(children, (line, _idx, blank) => ">" + (blank ? "" : " ") + line);
+  }
+  const tracker = state.createTracker(info);
+  tracker.move("> ");
+  tracker.shift(2);
+  const body = state.containerFlow(node as Blockquote, tracker.current());
+  const header = `[!${kind.toUpperCase()}]`;
+  const combined = body ? `${header}\n${body}` : header;
+  return state.indentLines(combined, (line, _idx, blank) =>
+    ">" + (blank ? "" : " ") + line
+  );
+};
+
+export function serializeTree(nodes: MdNode[]): string {
+  const root: Root = { type: "root", children: nodes as never };
+  return toMarkdown(root, {
+    extensions: [gfmToMarkdown(), directiveToMarkdown()],
+    handlers: { blockquote: gfmAlertHandler },
+    bullet: "-",
+    fences: true,
+  } satisfies ToMdOptions);
+}
+
+export function renderMarkdown(
+  root: ReactNode | ReactElement,
+  options: WalkOptions = {}
+): string {
+  const nodes = walkTree(root, options);
   return serializeTree(nodes);
 }
 
-export function renderPage(root: ReactNode | ReactElement, envelope: Envelope): string {
-  const nodes = walkTree(root, { envelope });
+export function renderPage(
+  root: ReactNode | ReactElement,
+  envelope: Envelope,
+  options: Omit<WalkOptions, "envelope"> = {}
+): string {
+  const validated = parseEnvelope(envelope);
+  const usedActions = new Set<string>();
+  const nodes = walkTree(root, {
+    ...options,
+    envelope: validated,
+    onAction: (name) => {
+      usedActions.add(name);
+      options.onAction?.(name);
+    },
+  });
+  if (validated.tools) {
+    const declared = new Set(validated.tools.map((t) => t.name));
+    for (const used of usedActions) {
+      if (!declared.has(used)) {
+        throw new Error(
+          `Action "${used}" is used in the body but not declared in envelope.tools. See docs/spec/page-envelope.md#검증규칙.`
+        );
+      }
+    }
+  }
   const body = serializeTree(nodes);
-  const yaml = stringifyYaml(stripUndefined(envelope as unknown as Record<string, unknown>));
+  const yaml = stringifyYaml(stripUndefined(validated as unknown as Record<string, unknown>));
   return `---\n${yaml}---\n\n${body}`;
 }
 

@@ -13,7 +13,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --external react",
     "dev": "tsup src/index.ts --format esm --dts --watch --external react",
@@ -26,7 +29,8 @@
     "mdast-util-to-markdown": "^2.1.2",
     "mdast-util-gfm": "^3.0.0",
     "mdast-util-directive": "^3.0.0",
-    "yaml": "^2.6.1"
+    "yaml": "^2.6.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/mdast": "^4.0.4",
