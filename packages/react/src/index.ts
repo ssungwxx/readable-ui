@@ -1,7 +1,6 @@
 import type { FC, ReactNode } from "react";
 import {
   registerDualComponent,
-  serializeTree,
   type DualComponentSpec,
   type MdNode,
   type SerializeContext,
@@ -31,5 +30,16 @@ export function defineDualComponent<P>(opts: DefineDualComponentOptions<P>): Dua
   return Component;
 }
 
-export { serializeTree } from "@readable-ui/core";
-export type { MdNode, SerializeContext, DualComponentSpec } from "@readable-ui/core";
+export {
+  renderMarkdown,
+  renderPage,
+  walkTree,
+  serializeTree,
+} from "@readable-ui/core";
+export type {
+  Envelope,
+  EnvelopeTool,
+  MdNode,
+  SerializeContext,
+  DualComponentSpec,
+} from "@readable-ui/core";
