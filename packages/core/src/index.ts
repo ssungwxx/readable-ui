@@ -204,7 +204,11 @@ export function renderMarkdown(
   return serializeTree(nodes);
 }
 
-const CONVENTION_DUPLICATE_BUTTON_LINK = "duplicate-button-link";
+const DEFAULT_CONVENTIONS: Record<string, string> = {
+  "duplicate-button-link": "dual-render",
+  "form-inner-button-action": "inherit",
+  "uri-query-encoding": "percent-decoded-match",
+};
 
 function withDefaultConventions(env: Envelope): Envelope {
   const existing = env.extensions ?? {};
@@ -213,8 +217,8 @@ function withDefaultConventions(env: Envelope): Envelope {
     conventionsRaw && typeof conventionsRaw === "object"
       ? { ...(conventionsRaw as Record<string, unknown>) }
       : {};
-  if (!(CONVENTION_DUPLICATE_BUTTON_LINK in conventions)) {
-    conventions[CONVENTION_DUPLICATE_BUTTON_LINK] = "dual-render";
+  for (const [key, value] of Object.entries(DEFAULT_CONVENTIONS)) {
+    if (!(key in conventions)) conventions[key] = value;
   }
   return {
     ...env,

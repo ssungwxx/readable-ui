@@ -137,7 +137,41 @@ Gap 3건은 **ADR 0015 범위 밖**:
 
 ## Open questions / 후속
 
-1. Gap A 해결을 위해 ADR 0002에 "`:` URI query에서 raw vs percent-encoded 모두 수용 + sender side는 URLSearchParams 자동 encode 결과 수용" 한 문장 추가 — 별도 ADR 없이 개정 가능.
-2. Gap B — `listUsers.input.properties._page.default` 를 envelope에 추가하고 fixture 재생성 후 T6 재검증.
-3. Gap C — `form-inner-button-action: inherit` convention key 후보 재검토 (ADR 0013 Open 갱신).
+1. Gap A 해결을 위해 ADR 0002에 "`:` URI query에서 raw vs percent-encoded 모두 수용 + sender side는 URLSearchParams 자동 encode 결과 수용" 한 문장 추가 — 별도 ADR 없이 개정 가능. → **2026-04-18 ADR 0002 `§Query value encoding` 보강 + `uri-query-encoding: percent-decoded-match` convention 자동 주입. v2에서 high 확인.**
+2. Gap B — `listUsers.input.properties._page.default` 를 envelope에 추가하고 fixture 재생성 후 T6 재검증. → **2026-04-18 envelope tool input 에 `_page/_size/_sort` default 선언. v2에서 high 확인.**
+3. Gap C — `form-inner-button-action: inherit` convention key 후보 재검토 (ADR 0013 Open 갱신). → **2026-04-18 ADR 0013 Follow-up + `form-inner-button-action: inherit` convention 자동 주입. v2에서 high 확인.**
 4. **envelope `pagination` 공존 케이스 별도 fixture** — 본 test에서는 부재만 검증. 공존+불일치 케이스(warning 의도 동작)는 후속 fixture에서 다룸.
+
+---
+
+## v2 재검증 (Gap A/B/C 개선 후)
+
+- Date: 2026-04-18
+- Fixture v2: 동일 경로 `/tmp/readable-ui-tests/users.md`. 변경점 — envelope `extensions.conventions` 에 `uri-query-encoding`·`form-inner-button-action` 자동 주입, `listUsers.input.properties._page/_size/_sort` 에 `default` 선언.
+- Method: fresh-context Claude 서브에이전트에게 Gap 대응 과제 4개(T3/T4/T6/T9)만 재실행.
+
+### 결과
+
+| # | v1 판정 | v1 confidence | v2 판정 | v2 confidence | 변화 |
+|---|---|---|---|---|---|
+| T3 (sort 방향 전환 URI) | PARTIAL | medium | ✅ PASS | **high** | medium → high |
+| T4 (페이지 이동 URI) | PARTIAL | medium | ✅ PASS | **high** | medium → high |
+| T6 (신규 필터 최소 URI) | PARTIAL | medium | ✅ PASS | **high** | medium → high |
+| T9 (Form 내부 button 근거) | PARTIAL | medium | ✅ PASS | **high** | medium → high |
+
+### v2 에이전트가 핵심 신호로 인용한 것
+
+- **T3**: `uri-query-encoding: percent-decoded-match` convention + footer URL 예시 `_sort=createdAt%3Adesc` 두 신호 인용. "raw 와 encoded 둘 다 동등하므로 LLM 이 어느 쪽으로 써도 서버가 매칭한다" 로 확신.
+- **T4**: 현재 directive attribute 값 그대로 유지 + `_page=3` 만 교체 — 규약이 명시되어 추론 불필요.
+- **T6**: `Unspecified params fall back to each property's default value` 문구 + `default: 1` / `default: 20` / `default: "createdAt:desc"` 세 신호를 직접 인용해 "minimal URI 가 충분함" 확정.
+- **T9**: `form-inner-button-action: inherit` convention + button directive 속성 부재 + 감싸는 `:::form{action="createUser"}` — 세 신호 일치로 high.
+
+### 최종 스코어 요약
+
+| Gap | 조치 | 결과 |
+|---|---|---|
+| A (colon 인코딩) | ADR 0002 `§Query value encoding` + `uri-query-encoding` convention | medium → **high** |
+| B (default param) | envelope tool input `default` 선언 | medium → **high** |
+| C (form-action-inheritance 외재화) | ADR 0013 Follow-up + `form-inner-button-action` convention | medium → **high** |
+
+4건 모두 고신뢰 판별 가능. **T1–T10 전부 high 달성**, ADR 0015 의 LLM 친화성 기준선 완결.

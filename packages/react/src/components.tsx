@@ -30,7 +30,11 @@ function buildActionURI(
   tool: string,
   params: Record<string, string | number | boolean> = {}
 ): string {
-  const entries = Object.entries(params).map(([k, v]) => [k, String(v)] as [string, string]);
+  // ADR 0002 §Query value encoding: percent-encode via URLSearchParams (RFC 3986).
+  // Matching is on percent-decoded values so senders may use raw or encoded form.
+  const entries = Object.entries(params).map(
+    ([k, v]) => [k, String(v)] as [string, string]
+  );
   const qs = new URLSearchParams(entries).toString();
   return `mcp://tool/${tool}${qs ? `?${qs}` : ""}`;
 }

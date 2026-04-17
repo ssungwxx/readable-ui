@@ -63,14 +63,18 @@ export const usersEnvelope: Envelope = {
       name: "listUsers",
       title: "List users",
       description:
-        "List users with pagination / sort / filter. Accepts `_page`, `_size`, `_sort=<key>:<dir>`, and `_filter_<field>=<value>` query params.",
+        "List users with pagination / sort / filter. Accepts `_page`, `_size`, `_sort=<key>:<dir>`, and `_filter_<field>=<value>` query params. Unspecified params fall back to each property's `default` value.",
       role: "admin",
       input: {
         type: "object",
         properties: {
-          _page: { type: "integer", minimum: 1 },
-          _size: { type: "integer", minimum: 1 },
-          _sort: { type: "string", pattern: "^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$" },
+          _page: { type: "integer", minimum: 1, default: 1 },
+          _size: { type: "integer", minimum: 1, default: 20 },
+          _sort: {
+            type: "string",
+            pattern: "^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$",
+            default: "createdAt:desc",
+          },
           _filter_status: { type: "string", enum: ["active", "inactive"] },
           _filter_role: { type: "string", enum: ["admin", "user"] },
         },
