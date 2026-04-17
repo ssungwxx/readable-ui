@@ -18,13 +18,22 @@ interface User extends Record<string, unknown> {
   id: string;
   email: string;
   role: "admin" | "user";
+  status: "active" | "inactive";
+  createdAt: string;
 }
 
 const sampleUsers: User[] = [
-  { id: "u_alice_01", email: "alice@example.com", role: "admin" },
-  { id: "u_bob_01", email: "bob@example.com", role: "user" },
-  { id: "u_carol_01", email: "carol@example.com", role: "user" },
+  { id: "u_alice_01", email: "alice@example.com", role: "admin", status: "active", createdAt: "2026-04-12" },
+  { id: "u_bob_01", email: "bob@example.com", role: "user", status: "active", createdAt: "2026-04-10" },
+  { id: "u_carol_01", email: "carol@example.com", role: "user", status: "active", createdAt: "2026-04-08" },
 ];
+
+const PAGE_SIZE = 20;
+const TOTAL_ROWS = 135;
+const CURRENT_PAGE = 2;
+const TOTAL_PAGES = Math.ceil(TOTAL_ROWS / PAGE_SIZE);
+const ACTIVE_FILTER = { status: "active", role: "user" } as const;
+const CURRENT_SORT = "createdAt:desc";
 
 export const usersEnvelope: Envelope = {
   title: "User management",
@@ -49,12 +58,24 @@ export const usersEnvelope: Envelope = {
       text: "All mutations here are recorded in the audit log.",
     },
   ],
-  pagination: {
-    page: 1,
-    perPage: 20,
-    total: sampleUsers.length,
-  },
   tools: [
+    {
+      name: "listUsers",
+      title: "List users",
+      description:
+        "List users with pagination / sort / filter. Accepts `_page`, `_size`, `_sort=<key>:<dir>`, and `_filter_<field>=<value>` query params.",
+      role: "admin",
+      input: {
+        type: "object",
+        properties: {
+          _page: { type: "integer", minimum: 1 },
+          _size: { type: "integer", minimum: 1 },
+          _sort: { type: "string", pattern: "^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$" },
+          _filter_status: { type: "string", enum: ["active", "inactive"] },
+          _filter_role: { type: "string", enum: ["admin", "user"] },
+        },
+      },
+    },
     {
       name: "createUser",
       title: "Create user",
@@ -111,28 +132,37 @@ export function UsersPage() {
         Deleting a user is permanent and cannot be undone.
       </Alert>
 
-      <Card title="Existing users">
-        <Table<User>
-          columns={[
-            { key: "email", label: "Email" },
-            { key: "role", label: "Role" },
-          ]}
-          rows={sampleUsers}
-          actions={[
-            {
-              tool: "updateUser",
-              label: "Edit",
-              params: (r) => ({ id: r.id }),
-            },
-            {
-              tool: "deleteUser",
-              label: "Delete",
-              variant: "danger",
-              params: (r) => ({ id: r.id }),
-            },
-          ]}
-        />
-      </Card>
+      <Table<User>
+        caption="Active users"
+        tool="listUsers"
+        page={CURRENT_PAGE}
+        of={TOTAL_PAGES}
+        size={PAGE_SIZE}
+        total={TOTAL_ROWS}
+        sort={CURRENT_SORT}
+        filter={ACTIVE_FILTER}
+        mode="summary"
+        columns={[
+          { key: "email", label: "Email" },
+          { key: "role", label: "Role" },
+          { key: "status", label: "Status" },
+          { key: "createdAt", label: "Created" },
+        ]}
+        rows={sampleUsers}
+        actions={[
+          {
+            tool: "updateUser",
+            label: "Edit",
+            params: (r) => ({ id: r.id }),
+          },
+          {
+            tool: "deleteUser",
+            label: "Delete",
+            variant: "danger",
+            params: (r) => ({ id: r.id }),
+          },
+        ]}
+      />
 
       <Card title="Create a new user">
         <Form action="createUser">

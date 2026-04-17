@@ -34,6 +34,7 @@
 - [0012 — Dual-representation convention signaling](./adr/0012-dual-render-convention-signals.md)
 - [0013 — Form 내부 Button의 action 속성 생략](./adr/0013-suppress-form-inner-button-action.md)
 - [0014 — Global nav as envelope metadata](./adr/0014-nav-as-envelope-metadata.md)
+- [0015 — Table as container directive (pagination/sort/filter)](./adr/0015-table-as-container-directive.md)
 
 ## Open Decisions
 

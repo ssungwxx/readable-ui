@@ -2,7 +2,7 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md)
 
 ## 구조
 
@@ -108,6 +108,8 @@ AI가 자기 위치를 파악하고 다른 페이지와 교차 참조할 수 있
 
 목록성 페이지의 현재 페이지 상태. `total`은 선언형 — 실제 데이터 fetch 결과와 일치해야 한다.
 
+**ADR 0015 의미 강등**: Table directive가 페이지에 있으면 directive의 `page/of/size`가 SSOT이다. 본 envelope `pagination`은 (a) Table이 0개 또는 1개인 페이지에서 선언하는 호환 shortcut으로만 유지된다. directive와 공존·불일치 시 warning (directive 우선). Table이 2개 이상이고 envelope `pagination`이 선언되면 warning.
+
 #### `updatedAt` (optional, ISO8601)
 
 페이지 콘텐츠의 마지막 갱신 시점. AI가 "이 정보가 얼마나 최신인가" 판단.
@@ -146,13 +148,14 @@ JSON Schema subset 지원 키워드: `type`, `properties`, `required`, `items`, 
 
 1. **Envelope 부재** 또는 `title` 누락 → **error**
 2. **`tools[].name` 충돌** (같은 페이지 내 중복) → **error**
-3. **Action 미선언 참조** — 본문 directive `action=X`, Link `mcp://tool/X`, Table `actions[].tool=X`가 envelope `tools[]`에 없으면 → **error** (기본)
+3. **Action 미선언 참조** — 본문 directive `action=X`, Link `mcp://tool/X`, Table directive `:::table{tool=X}`, Table `actions[].tool=X`가 envelope `tools[]`에 없으면 → **error** (기본)
 4. **JSON Schema 형식 오류** — `input`/`output`이 Zod `JsonSchemaSubsetZ` parse 실패 → **error**
 5. **권한 일관성 warning** — tool의 `role`이 페이지 `role`보다 공개적이면 → **warning**
 6. **알 수 없는 최상위 키** → **error** (Zod `.strict()`)
 7. **constraints[].id 중복** → **error**
 8. **`paths.view` 누락** (v1 하위호환) → **warning** → v2에서 error 승격 예정
-9. **pagination 교차 일관성** — envelope `pagination.total`과 `<Table rows.length>` 이 불일치하면 `warning` (향후 구현)
+9. **pagination 교차 일관성** — envelope `pagination.total`과 Table directive 메타(`of`·`size`·row 수)가 불일치하면 `warning` (향후 구현). Table directive가 있으면 directive 우선 (ADR 0015 §4).
+10. **Table directive ↔ envelope pagination 공존** — envelope `pagination`이 있고 페이지에 Table directive가 2개 이상이면 `warning` (어느 Table의 상태인지 모호). 1개이고 값이 불일치해도 `warning` (directive 우선).
 
 ## 예시
 

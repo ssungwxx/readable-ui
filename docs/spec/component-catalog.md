@@ -2,7 +2,7 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md)
 
 ## 카탈로그 밖은 전부 금지
 
@@ -102,23 +102,6 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - HTML: `<ul><li><input type=checkbox>`
 - Props: each item has `checked: boolean`
 
-### Table
-
-- Markdown: GFM table
-- HTML: `<table>`
-- Props:
-  - `columns: TableColumn<R>[]` — `{ key: keyof R, label: string, align? }`
-  - `rows: R[]` — `R`은 `{ id: string | number; ... }` 제약
-  - `actions?: TableRowAction<R>[]` — `{ tool, label, variant?, params: (row) => Record<string, primitive> }`
-  - `showIdColumn?: boolean` — 기본 true, id 열 자동 렌더
-  - `caption?: string`
-- 직렬화: GFM table + id 열 + actions 열. actions 셀은 `[Label](mcp://tool/<tool>?<params>)` link-as-action만 사용 (directive 금지).
-- **제약**: rowspan/colspan/중첩 테이블 불가. 200행 초과 시 warning — fenced JSON payload + preview 표로 분리 권장 (후속 spec).
-- 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
-- `actions[].tool`은 envelope `tools[]`에 선언된 이름이어야 함 (envelope 검증규칙 3).
-- **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 같은 이스케이프는 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
-- Generic 사용: `<Table<User> columns={...} rows={users} actions={...}/>` — wrapper 함수가 타입 추론 유지.
-
 ### Alert
 
 - Markdown: `> [!NOTE]` / `> [!TIP]` / `> [!IMPORTANT]` / `> [!WARNING]` / `> [!CAUTION]`
@@ -162,6 +145,50 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - Props: `action: string` (envelope `tools[].name` 중 하나), `children: block nodes`
 - Note: `action`이 envelope에 선언되지 않으면 **error** (ADR 0005 검증규칙).
 - 내부 walk 시 `formAction` 을 context로 주입한다 (ADR 0013). 자식 Button이 동일 action이면 attribute 생략.
+
+### Table (ADR 0015)
+
+admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/filter 메타를 데이터와 co-locate한다.
+
+- Markdown:
+
+  ```
+  :::table{tool=listUsers page=2 of=7 size=20 sort=createdAt:desc filter-status=active filter-role=admin caption="Active users"}
+  | id | name  | email    |
+  | -- | ----- | -------- |
+  | 1  | Alice | a@x.com |
+  :::
+  ```
+
+- HTML: `<section class="rui-table">` 안에 `<caption>` + `<table>` + pagination UI.
+- Props:
+  - `columns: TableColumn<R>[]` — `{ key: keyof R, label: string, align? }`
+  - `rows: R[]` — `R`은 `{ id: string | number; ... }` 제약
+  - `actions?: TableRowAction<R>[]` — row 단위. 셀에서 `[Label](mcp://tool/<tool>?<params>)` link 로 직렬화 (directive 금지).
+  - `showIdColumn?: boolean` — 기본 true
+  - `caption?: string` — directive `caption="..."` attribute로 직렬화 (ADR 0015 §2, 현행 누락 회복)
+  - `tool?: string` — 이 Table을 생성한 목록 tool 이름. envelope `tools[]` 중 하나. 헤더·페이지 링크의 재호출 대상.
+  - `page?: number` (1-index, default 1)
+  - `of?: number` — total pages. 명시 시 LLM이 `ceil(total/size)` 계산 불요.
+  - `size?: number` — 페이지 크기
+  - `total?: number` — total rows. `mode="summary"` 사용 시 권장 (footer "View all N rows" link 생성 기반).
+  - `sort?: string` — `KEY:DIR` 단일 컬럼. `DIR`은 `asc|desc` (case-insensitive).
+  - `filter?: Record<string, string>` — 필드별 equality. `{ status: "active", role: "admin" }` → `filter-status=active filter-role=admin`.
+  - `mode?: "summary"` — summary 모드에서 head N행만 직렬화. `rows.length < total`이면 footer에 `[View all N rows](mcp://tool/<tool>?_page=1&_size=<total>)` link 추가.
+- 직렬화 규약:
+  - `:::table{...}` container directive + 내부 GFM pipe table (`| id | ... |`).
+  - id 열·actions 열 규칙은 변경 없음 (ADR 0009 §6).
+  - actions 셀은 `[Label](mcp://tool/<tool>?<params>)` link-as-action만.
+- 엔진이 생성하는 action URI는 **시스템 예약 prefix `_`** 를 사용:
+  - `_page`, `_size`, `_sort`, `_filter_<field>` — tool 자체 param과 충돌 방지.
+  - 헤더 컬럼 클릭 = 현재 `filter`/`size` 유지, `_sort=<key>:<dir>` 토글, `_page=1` 리셋.
+  - 페이지 이동 = 현재 `sort`/`filter`/`size` 유지, `_page=N`만 변경.
+- **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 시 warning — `readable-ui:data` fenced payload 분리 경로는 후속 ADR.
+- 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
+- `tool` 및 `actions[].tool`은 envelope `tools[]`에 선언된 이름이어야 함 (envelope 검증규칙 3).
+- envelope `pagination`과 directive `page/of/size`가 공존하면 directive 우선, 불일치 시 warning (ADR 0015 §4).
+- **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 등은 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
+- Generic 사용: `<Table<User> columns={...} rows={users} tool="listUsers" page={2} of={7} .../>`.
 
 ### Steps
 
@@ -275,7 +302,7 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `min`, `max`, `step`, `format`, `multiple`은 built-in 의미로 예약. 다른 용도로 overload 금지.
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `min`, `max`, `step`, `format`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
 5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).
 6. **셀 이스케이프 수용**: Table 셀 내부의 `\_`, `\@` 등은 round-trip clean 동작. 버그 아님.

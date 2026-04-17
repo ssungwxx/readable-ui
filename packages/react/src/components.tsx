@@ -523,74 +523,247 @@ export interface TableProps<R extends { id: string | number }> {
   actions?: TableRowAction<R>[];
   showIdColumn?: boolean;
   caption?: string;
+  tool?: string;
+  page?: number;
+  of?: number;
+  size?: number;
+  total?: number;
+  sort?: string;
+  mode?: "summary";
+  filter?: Record<string, string | number | boolean>;
 }
 
 type AnyRow = { id: string | number; [k: string]: unknown };
 
+function parseSort(sort: string | undefined): { key: string; dir: "asc" | "desc" } | null {
+  if (!sort) return null;
+  const idx = sort.indexOf(":");
+  if (idx < 0) return { key: sort, dir: "asc" };
+  const key = sort.slice(0, idx);
+  const dir = sort.slice(idx + 1).toLowerCase();
+  if (dir !== "asc" && dir !== "desc") return { key, dir: "asc" };
+  return { key, dir };
+}
+
+function mergeFilterIntoParams(
+  base: Record<string, string | number | boolean>,
+  filter: Record<string, string | number | boolean> | undefined
+): Record<string, string | number | boolean> {
+  if (!filter) return base;
+  const out = { ...base };
+  for (const [k, v] of Object.entries(filter)) {
+    out[`_filter_${k}`] = v;
+  }
+  return out;
+}
+
 const TableImpl = defineDualComponent<TableProps<AnyRow>>({
   name: "table",
-  render: ({ columns, rows, actions = [], showIdColumn = true, caption }) => (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      {caption ? (
-        <div className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border-b border-gray-200">
-          {caption}
-        </div>
-      ) : null}
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-700">
-          <tr>
-            {showIdColumn ? <th className="px-4 py-2 text-left font-medium">id</th> : null}
-            {columns.map((c) => (
-              <th key={c.key} className={`px-4 py-2 font-medium text-${c.align ?? "left"}`}>
-                {c.label}
-              </th>
+  render: ({
+    columns,
+    rows,
+    actions = [],
+    showIdColumn = true,
+    caption,
+    tool,
+    page,
+    of,
+    size,
+    total,
+    sort,
+    mode,
+    filter,
+  }) => {
+    const parsedSort = parseSort(sort);
+    const filterEntries = filter ? Object.entries(filter) : [];
+    const sortLinkForCol = (colKey: string): string | null => {
+      if (!tool) return null;
+      const currentDir = parsedSort?.key === colKey ? parsedSort.dir : null;
+      const nextDir: "asc" | "desc" = currentDir === "asc" ? "desc" : "asc";
+      const params = mergeFilterIntoParams(
+        {
+          _page: 1,
+          ...(size != null ? { _size: size } : {}),
+          _sort: `${colKey}:${nextDir}`,
+        },
+        filter
+      );
+      return buildActionURI(tool, params);
+    };
+    const pageLinkFor = (targetPage: number): string | null => {
+      if (!tool) return null;
+      const params = mergeFilterIntoParams(
+        {
+          _page: targetPage,
+          ...(size != null ? { _size: size } : {}),
+          ...(sort ? { _sort: sort } : {}),
+        },
+        filter
+      );
+      return buildActionURI(tool, params);
+    };
+    const showSummaryFooter =
+      mode === "summary" && tool && typeof total === "number" && rows.length < total;
+    const summaryFooterUrl = showSummaryFooter
+      ? buildActionURI(tool, {
+          _page: 1,
+          _size: total as number,
+          ...(sort ? { _sort: sort } : {}),
+        })
+      : null;
+
+    return (
+      <section className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        {caption ? (
+          <div className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border-b border-gray-200">
+            {caption}
+          </div>
+        ) : null}
+        {filterEntries.length ? (
+          <div className="flex flex-wrap gap-1 px-4 py-2 text-xs text-gray-600 border-b border-gray-100">
+            <span className="font-medium text-gray-700">Filter:</span>
+            {filterEntries.map(([k, v]) => (
+              <span key={k} className="rounded bg-gray-100 px-2 py-0.5">
+                {k}: {String(v)}
+              </span>
             ))}
-            {actions.length ? (
-              <th className="px-4 py-2 text-left font-medium">Actions</th>
-            ) : null}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={String(r.id)} data-rui-id={String(r.id)} className="border-t border-gray-100">
-              {showIdColumn ? (
-                <td className="px-4 py-2 text-xs text-gray-500 font-mono">{String(r.id)}</td>
-              ) : null}
-              {columns.map((c) => (
-                <td key={c.key} className={`px-4 py-2 text-${c.align ?? "left"}`}>
-                  {String(r[c.key] ?? "")}
-                </td>
-              ))}
-              {actions.length ? (
-                <td className="px-4 py-2 space-x-2">
-                  {actions.map((a) => {
-                    const color =
-                      a.variant === "danger"
-                        ? "text-red-600"
-                        : a.variant === "secondary"
-                          ? "text-gray-600"
-                          : "text-blue-600";
-                    const url = buildActionURI(a.tool, a.params(r));
-                    return (
-                      <a
-                        key={a.tool}
-                        href={url}
-                        data-action={a.tool}
-                        className={`${color} underline hover:no-underline`}
-                      >
-                        {a.label}
+          </div>
+        ) : null}
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700">
+            <tr>
+              {showIdColumn ? <th className="px-4 py-2 text-left font-medium">id</th> : null}
+              {columns.map((c) => {
+                const url = sortLinkForCol(c.key);
+                const indicator =
+                  parsedSort?.key === c.key ? (parsedSort.dir === "asc" ? " ▲" : " ▼") : "";
+                return (
+                  <th
+                    key={c.key}
+                    className={`px-4 py-2 font-medium text-${c.align ?? "left"}`}
+                  >
+                    {url ? (
+                      <a href={url} data-sort={c.key} className="hover:underline">
+                        {c.label}
+                        {indicator}
                       </a>
-                    );
-                  })}
-                </td>
+                    ) : (
+                      <>
+                        {c.label}
+                        {indicator}
+                      </>
+                    )}
+                  </th>
+                );
+              })}
+              {actions.length ? (
+                <th className="px-4 py-2 text-left font-medium">Actions</th>
               ) : null}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  ),
-  toMarkdown: ({ columns, rows, actions = [], showIdColumn = true }, ctx) => {
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr
+                key={String(r.id)}
+                data-rui-id={String(r.id)}
+                className="border-t border-gray-100"
+              >
+                {showIdColumn ? (
+                  <td className="px-4 py-2 text-xs text-gray-500 font-mono">{String(r.id)}</td>
+                ) : null}
+                {columns.map((c) => (
+                  <td key={c.key} className={`px-4 py-2 text-${c.align ?? "left"}`}>
+                    {String(r[c.key] ?? "")}
+                  </td>
+                ))}
+                {actions.length ? (
+                  <td className="px-4 py-2 space-x-2">
+                    {actions.map((a) => {
+                      const color =
+                        a.variant === "danger"
+                          ? "text-red-600"
+                          : a.variant === "secondary"
+                            ? "text-gray-600"
+                            : "text-blue-600";
+                      const url = buildActionURI(a.tool, a.params(r));
+                      return (
+                        <a
+                          key={a.tool}
+                          href={url}
+                          data-action={a.tool}
+                          className={`${color} underline hover:no-underline`}
+                        >
+                          {a.label}
+                        </a>
+                      );
+                    })}
+                  </td>
+                ) : null}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {(typeof page === "number" && typeof of === "number" && of > 1) ||
+        showSummaryFooter ? (
+          <div className="flex items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-600">
+            <div>
+              {typeof page === "number" && typeof of === "number" ? (
+                <>
+                  Page <span className="font-medium">{page}</span> of{" "}
+                  <span className="font-medium">{of}</span>
+                  {typeof total === "number" ? ` (${total} rows)` : null}
+                </>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              {typeof page === "number" && page > 1 && pageLinkFor(page - 1) ? (
+                <a
+                  href={pageLinkFor(page - 1) as string}
+                  data-page={page - 1}
+                  className="text-blue-600 hover:underline"
+                >
+                  ← Prev
+                </a>
+              ) : null}
+              {typeof page === "number" && typeof of === "number" && page < of && pageLinkFor(page + 1) ? (
+                <a
+                  href={pageLinkFor(page + 1) as string}
+                  data-page={page + 1}
+                  className="text-blue-600 hover:underline"
+                >
+                  Next →
+                </a>
+              ) : null}
+              {summaryFooterUrl ? (
+                <a href={summaryFooterUrl} className="text-blue-600 hover:underline">
+                  View all {total} rows
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </section>
+    );
+  },
+  toMarkdown: (
+    {
+      columns,
+      rows,
+      actions = [],
+      showIdColumn = true,
+      caption,
+      tool,
+      page,
+      of,
+      size,
+      total,
+      sort,
+      mode,
+      filter,
+    },
+    ctx
+  ) => {
+    if (tool) ctx.registerAction(tool);
     for (const a of actions) ctx.registerAction(a.tool);
 
     const textCell = (value: string): MdNode => ({
@@ -654,10 +827,53 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       ...(actions.length ? (["left"] as const) : []),
     ];
 
-    return {
+    const innerTable: MdNode = {
       type: "table",
       align,
       children: [headerRow, ...bodyRows] as never,
+    };
+
+    const attrs: Record<string, string> = {};
+    if (tool) attrs.tool = tool;
+    if (page != null) attrs.page = String(page);
+    if (of != null) attrs.of = String(of);
+    if (size != null) attrs.size = String(size);
+    if (total != null) attrs.total = String(total);
+    if (sort) attrs.sort = sort;
+    if (mode) attrs.mode = mode;
+    if (caption) attrs.caption = caption;
+    if (filter) {
+      for (const [k, v] of Object.entries(filter)) {
+        attrs[`filter-${k}`] = String(v);
+      }
+    }
+
+    const childrenNodes: MdNode[] = [innerTable];
+    if (mode === "summary" && tool && typeof total === "number" && rows.length < total) {
+      const summaryUrl = buildActionURI(tool, {
+        _page: 1,
+        _size: total,
+        ...(sort ? { _sort: sort } : {}),
+      });
+      childrenNodes.push({
+        type: "paragraph",
+        children: [
+          {
+            type: "link",
+            url: summaryUrl,
+            children: [
+              { type: "text", value: `View all ${total} rows` } as MdNode,
+            ] as never,
+          } as MdNode,
+        ] as never,
+      });
+    }
+
+    return {
+      type: "containerDirective",
+      name: "table",
+      attributes: attrs,
+      children: childrenNodes as never,
     };
   },
 });

@@ -77,3 +77,4 @@ ADR 0005/0009의 `extensions: Record<string, unknown>` 예약 슬롯을 활용. 
 
 - `conventions` 값 문자열을 enum으로 닫을지 자유 문자열로 열어둘지 — 타 directive 확장 시 재검토.
 - `"fallback"` 키워드 localization 정책은 v2.
+- **Container directive fallback** — Form(ADR 0009 §5)과 Table(ADR 0015)이 container directive이고, directive 미지원 뷰어에서 opening/closing fence가 paragraph·ghost row로 흡수된다. 본 ADR은 Button link fallback만 다루므로 container fallback은 후속 ADR에서 `link-only` 대체 경로를 정의할 수 있다.

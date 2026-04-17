@@ -1,6 +1,6 @@
 # ADR 0009 — Envelope extensions, Table row actions, and serialization refinements
 
-- Status: Accepted
+- Status: Accepted (§1 `pagination` scope weakened and §6 Table classification revised by [ADR 0015](./0015-table-as-container-directive.md))
 - Date: 2026-04-17
 
 ## Context
@@ -22,7 +22,7 @@
 
 - `paths: { view: string; markdown?: string; api?: string; canonical?: string }`
 - `constraints: Array<{ id: string; text: string; severity: "info" | "warn" | "danger" }>`
-- `pagination: { page: number; perPage: number; total: number; nextUrl?: string; prevUrl?: string }`
+- `pagination: { page: number; perPage: number; total: number; nextUrl?: string; prevUrl?: string }` — **ADR 0015가 의미를 "Table 0~1개 페이지용 shortcut"으로 강등**. Table directive가 있으면 directive 메타가 SSOT이고 envelope `pagination`은 호환 유지용이다.
 - `updatedAt: string` (ISO8601)
 - `extensions: Record<string, unknown>` — GraphQL 선례(구현자 예약 슬롯)
 
@@ -65,6 +65,7 @@ Tool 레벨 추가:
 - 각 row는 `id` 필드를 필수로 포함. `showIdColumn` 기본 true로 id 컬럼을 렌더.
 - action 링크는 `mcp://tool/<tool>?<params>` 완전 URI로 빌드. `params: (row: R) => Record<string, primitive>` 선언형.
 - envelope `tools[]`와 교차 참조 — `actions[].tool`이 미선언 시 error.
+- **ADR 0015 개정**: Table 전체의 직렬화 형태가 Block(GFM table)에서 Container(`:::table{...}` + 내부 pipe table)로 바뀐다. row action 셀 규약(link-as-action)과 셀 제약은 본 §6 그대로 유지된다. Table 레벨의 pagination/sort/filter 메타는 ADR 0015 참조.
 
 ### 7. Select 신설 + Input 확장
 
