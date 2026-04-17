@@ -12,6 +12,7 @@ import {
   Table,
 } from "@readable-ui/react/components";
 import type { Envelope } from "@readable-ui/react";
+import { withActive } from "../_shared/admin-nav";
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -29,7 +30,8 @@ export const usersEnvelope: Envelope = {
   title: "User management",
   purpose: "Admin page to list, create, update, and delete user accounts.",
   role: "admin",
-  layout: "flow",
+  layout: "sidebar",
+  nav: { items: withActive("/users") },
   paths: {
     view: "/users",
     markdown: "/users.md",
@@ -98,7 +100,7 @@ export const usersEnvelope: Envelope = {
 
 export function UsersPage() {
   return (
-    <Page>
+    <Page layout="sidebar" nav={withActive("/users")}>
       <Heading level={1}>Users</Heading>
       <Paragraph>
         Manage users. Any change here is auditable. See the{" "}

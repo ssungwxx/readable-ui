@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { defineDualComponent } from "./index.js";
-import type { MdNode, SerializeContext } from "@readable-ui/core";
+import type {
+  MdNode,
+  Nav,
+  NavItem as EnvelopeNavItem,
+  PageLayout,
+  SerializeContext,
+} from "@readable-ui/core";
 
 function asText(children: ReactNode): string {
   if (children == null || typeof children === "boolean") return "";
@@ -29,15 +35,130 @@ function buildActionURI(
   return `mcp://tool/${tool}${qs ? `?${qs}` : ""}`;
 }
 
+export type NavItem = EnvelopeNavItem;
+
 export interface PageProps {
+  layout?: PageLayout;
+  nav?: NavItem[];
   children: ReactNode;
 }
+
+function resolveNav(
+  propNav: NavItem[] | undefined,
+  envNav: Nav | undefined
+): { items: NavItem[]; scope: "global" | "section" } | null {
+  if (envNav && envNav.items.length > 0) {
+    return { items: envNav.items, scope: envNav.scope ?? "global" };
+  }
+  if (propNav && propNav.length > 0) {
+    return { items: propNav, scope: "global" };
+  }
+  return null;
+}
+
+function renderNavMarkdown(nav: NavItem[], scope: "global" | "section"): MdNode[] {
+  if (nav.length === 0) return [];
+  const headingText = scope === "section" ? "Section navigation" : "Navigation";
+  const heading: MdNode = {
+    type: "heading",
+    depth: 2,
+    children: [{ type: "text", value: headingText } as MdNode] as never,
+  };
+  const list: MdNode = {
+    type: "list",
+    ordered: false,
+    spread: false,
+    children: nav.map((item) => {
+      const linkChildren: MdNode[] = [
+        {
+          type: "link",
+          url: item.href,
+          children: [{ type: "text", value: item.label } as MdNode] as never,
+        } as MdNode,
+      ];
+      if (item.active) {
+        linkChildren.push({ type: "text", value: " · current" } as MdNode);
+      }
+      return {
+        type: "listItem",
+        spread: false,
+        children: [
+          {
+            type: "paragraph",
+            children: linkChildren as never,
+          },
+        ] as never,
+      } as MdNode;
+    }) as never,
+  };
+  return [heading, list];
+}
+
 export const Page = defineDualComponent<PageProps>({
   name: "page",
-  render: ({ children }) => (
-    <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">{children}</main>
-  ),
-  toMarkdown: ({ children }, ctx) => ctx.walk(children),
+  render: ({ layout = "flow", nav, children }) => {
+    if (layout === "sidebar" && nav && nav.length > 0) {
+      return (
+        <div className="flex min-h-screen">
+          <aside className="w-60 shrink-0 border-r border-gray-200 bg-gray-50 px-4 py-6">
+            <nav className="flex flex-col gap-1 text-sm">
+              {nav.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={item.active ? "page" : undefined}
+                  className={
+                    item.active
+                      ? "rounded px-3 py-2 font-medium bg-blue-50 text-blue-700"
+                      : "rounded px-3 py-2 text-gray-700 hover:bg-gray-100"
+                  }
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </aside>
+          <main className="flex-1 px-8 py-10 space-y-6">{children}</main>
+        </div>
+      );
+    }
+    if (layout === "topbar" && nav && nav.length > 0) {
+      return (
+        <div className="flex min-h-screen flex-col">
+          <header className="border-b border-gray-200 bg-white">
+            <nav className="mx-auto flex max-w-6xl gap-1 px-6 py-3 text-sm">
+              {nav.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={item.active ? "page" : undefined}
+                  className={
+                    item.active
+                      ? "rounded px-3 py-2 font-medium bg-blue-50 text-blue-700"
+                      : "rounded px-3 py-2 text-gray-700 hover:bg-gray-100"
+                  }
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          </header>
+          <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-6">
+            {children}
+          </main>
+        </div>
+      );
+    }
+    return (
+      <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">{children}</main>
+    );
+  },
+  toMarkdown: ({ nav: propNav, children }, ctx) => {
+    const body = ctx.walk(children);
+    const resolved = resolveNav(propNav, ctx.envelope?.nav);
+    if (!resolved) return body;
+    return [...renderNavMarkdown(resolved.items, resolved.scope), ...body];
+  },
 });
 
 export interface HeadingProps {
@@ -179,14 +300,18 @@ export const Button = defineDualComponent<ButtonProps>({
     const label = asText(children) || action;
     const url = buildActionURI(action);
 
+    const inheritAction = ctx.formAction === action;
     const directive: MdNode = {
       type: "leafDirective",
       name: "button",
-      attributes: { action, ...(variant ? { variant } : {}) },
+      attributes: {
+        ...(inheritAction ? {} : { action }),
+        ...(variant ? { variant } : {}),
+      },
       children: [{ type: "text", value: label } as MdNode] as never,
     };
 
-    const linkParagraph: MdNode = {
+    const linkOnly: MdNode = {
       type: "paragraph",
       children: [
         {
@@ -197,9 +322,21 @@ export const Button = defineDualComponent<ButtonProps>({
       ] as never,
     };
 
+    const linkWithFallbackTitle: MdNode = {
+      type: "paragraph",
+      children: [
+        {
+          type: "link",
+          url,
+          title: "fallback",
+          children: [{ type: "text", value: label }],
+        } as MdNode,
+      ] as never,
+    };
+
     if (ctx.fallback === "off") return directive;
-    if (ctx.fallback === "link-only") return linkParagraph;
-    return [directive, linkParagraph];
+    if (ctx.fallback === "link-only") return linkOnly;
+    return [directive, linkWithFallbackTitle];
   },
 });
 
@@ -224,7 +361,7 @@ export const Form = defineDualComponent<FormProps>({
       type: "containerDirective",
       name: "form",
       attributes: { action },
-      children: ctx.walk(children, { fallback: "off" }) as never,
+      children: ctx.walk(children, { fallback: "off", formAction: action }) as never,
     };
   },
 });

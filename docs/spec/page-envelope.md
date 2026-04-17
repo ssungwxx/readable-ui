@@ -2,7 +2,7 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md)
 
 ## 구조
 
@@ -59,9 +59,37 @@ extensions: <record, optional>  # implementor-reserved
 
 페이지를 열람할 수 있는 역할. 지정하지 않으면 public.
 
+#### `nav` (optional, object) — ADR 0014
+
+앱 쉘 네비게이션의 단일 소스. 선언되면 `<Page>` 쉘이 이 값을 본문 맨 앞 `## Navigation` (또는 `## Section navigation`) 섹션으로 flush한다.
+
+```yaml
+nav:
+  items:
+    - { label: Dashboard, href: /dashboard }
+    - { label: Users, href: /users, active: true }
+    - { label: Roles, href: /roles }
+  scope: global  # default; 또는 "section"
+```
+
+- `items[].label` / `items[].href` required. `active?: boolean` 은 0개 이상 허용 (1개 권장).
+- `scope: "global"` (default) — 앱 전역 쉘. 모든 페이지에서 동일 세트 유지 권장.
+- `scope: "section"` — 현재 섹션 내부 서브 nav. Markdown heading 텍스트가 `## Section navigation` 으로 분기.
+- envelope `nav` 와 Page prop `nav` 가 둘 다 주어지고 서로 다르면 warning. envelope 우선.
+
 #### `layout` (optional, enum)
 
-허용되는 레이아웃 식별자. 기본값 `flow`. v1은 `flow`만.
+허용되는 레이아웃 식별자. 기본값 `flow`.
+
+| id | 설명 | 도입 |
+|---|---|---|
+| `flow` | 세로 1차원 흐름 (default) | ADR 0007 |
+| `sidebar` | 좌측 수직 네비 + 우측 본문 | ADR 0011 |
+| `topbar` | 상단 수평 네비 + 하단 본문 | ADR 0011 |
+
+`sidebar`/`topbar` 선택 시 `<Page>` 에 `nav` prop으로 `{label, href, active?}[]` 전달. 좌/위 차이는 시각 전용이며 Markdown 직렬화는 동일 — body 맨 앞에 `## Navigation` + unordered 링크 리스트로 flush한다. 배치 정보는 버리지만 정보 손실은 없다 (ADR 0007 §4 flush 원칙). 상세는 [component-catalog.md §Page](./component-catalog.md#page).
+
+envelope `layout` 과 `<Page layout>` prop은 일치시키는 것이 권장. 불일치 시 warning.
 
 #### `paths` (optional, object)
 
@@ -90,7 +118,17 @@ AI가 자기 위치를 파악하고 다른 페이지와 교차 참조할 수 있
 
 #### `extensions` (optional, record)
 
-구현자 예약 슬롯. GraphQL 응답의 `extensions`와 동일한 철학. readable-ui 자체는 이 필드를 해석하지 않는다.
+구현자 예약 슬롯. GraphQL 응답의 `extensions`와 동일한 철학. readable-ui 자체 기능은 원칙적으로 이 필드를 해석하지 않는다.
+
+##### `extensions.conventions` (표준 서브키)
+
+ADR 0012에서 신설. readable-ui 런타임이 `renderPage` 시 기본값을 자동 주입하는 몇 개의 관행 키를 담는다. 사용자가 envelope에 다른 값을 지정하면 override.
+
+| 키 | 값 | 의미 |
+|---|---|---|
+| `duplicate-button-link` | `"dual-render"` (default) | Button directive 뒤에 오는 `mcp://tool/X` link paragraph는 **동일 호출의 이중 표현**이며 두 번 호출이 아님. 인스턴스 레벨 신호로 link title `"fallback"` 이 함께 출력됨 (ADR 0012). |
+
+추가 규범은 후속 ADR에서 확장.
 
 ### Tool 항목
 
@@ -205,7 +243,7 @@ AI가 tool 호출 인자를 추출할 때는 **셀 텍스트가 아니라 action
 
 ## 미정 / 후속 결정
 
-- **Layout 카탈로그 전체 값** — 현재 `flow`만. 후속 ADR에서 `tabs-page`, `split` 등 검토
+- **Layout 카탈로그 전체 값** — 현재 `flow`·`sidebar`·`topbar` (ADR 0011). `tabs-page`, `split-page`, `detail` 등은 후속 ADR 대상
 - **외부 스키마 참조** (`$ref`, `include: ./tools.yaml`) — 초기 비지원
 - **Permission 모델 확장** — 단순 역할 기반 `role`만
 - **Multipart envelope** (탭 내부 서브페이지) — 초기 비지원

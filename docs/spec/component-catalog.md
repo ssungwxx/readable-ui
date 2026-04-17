@@ -2,12 +2,41 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md)
 
 ## 카탈로그 밖은 전부 금지
 
 - 본 문서에 없는 이름의 컴포넌트를 `defineDualComponent`로 등록하면 **error**.
 - built-in 이름을 override하는 것만 허용 (시각 스타일 교체 용도).
+
+## Shell
+
+### Page
+
+페이지의 최상위 쉘. `layout`·`nav`는 **props**로 받는다 (카탈로그 확장이 아님 — ADR 0011).
+
+- Markdown: envelope YAML 뒤에 이어지는 body. nav가 있으면 body 맨 앞에 `## Navigation` (scope=section일 때 `## Section navigation`) 섹션 flush.
+- **nav 우선순위** (ADR 0014): envelope `nav.items` > Page prop `nav` > (없음). 둘 다 주어지면 envelope 우선 + 불일치 시 warning. 신규 작성 시 envelope에 선언 권장.
+- HTML: `layout` 값에 따라 `<main>` 또는 `<aside>+<main>` / `<header>+<main>` 쉘 분기.
+- Props:
+  - `layout?: "flow" | "sidebar" | "topbar"` — envelope `layout`과 일치해야 함 (불일치 시 warning, 미선언 시 `flow`)
+  - `nav?: NavItem[]` — `NavItem = { label: string; href: string; active?: boolean }` (하위호환, envelope `nav.items` 사용 권장)
+  - `children: block nodes`
+- 직렬화 예 (layout=sidebar, nav 3개):
+  ```markdown
+  ## Navigation
+
+  - [Users](/users) · current
+  - [Roles](/roles)
+  - [Audit log](/audit)
+
+  <body blocks>
+  ```
+- 규약:
+  - `active: true` 항목은 링크 뒤 ` · current` suffix. 다수 허용, 1개 권장.
+  - heading은 `##` 고정, 텍스트는 `Navigation` 고정 (i18n v2).
+  - 좌/위 배치 차이는 시각 전용 — Markdown 출력 동일.
+  - `nav`가 비어 있거나 `layout="flow"` 면 prepend 없음 — `flow` 와 완전히 동일한 body 출력.
 
 ## Atomic
 
@@ -132,6 +161,7 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - HTML: `<form>`
 - Props: `action: string` (envelope `tools[].name` 중 하나), `children: block nodes`
 - Note: `action`이 envelope에 선언되지 않으면 **error** (ADR 0005 검증규칙).
+- 내부 walk 시 `formAction` 을 context로 주입한다 (ADR 0013). 자식 Button이 동일 action이면 attribute 생략.
 
 ### Steps
 
@@ -198,9 +228,10 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 - Markdown: `::button[Label]{action=<toolName> variant=primary|secondary|danger}`
 - HTML: `<button>`
-- **Link-as-action fallback 자동 병기** (ADR 0001 이행 / ADR 0009): directive 뒤에 `[Label](mcp://tool/<toolName>)` paragraph가 함께 출력된다.
+- **Link-as-action fallback 자동 병기** (ADR 0001 이행 / ADR 0009): directive 뒤에 `[Label](mcp://tool/<toolName> "fallback")` paragraph가 함께 출력된다. CommonMark link title `"fallback"` 은 "이 link 는 앞 directive 의 fallback 이다" 는 인스턴스 레벨 신호 (ADR 0012).
 - Fallback 토글: `renderMarkdown(node, { fallback: "on" | "off" | "link-only" })`. 기본 `"on"`.
-- **Form 내부에서는 fallback 자동 off** — Form이 `ctx.walk(children, { fallback: "off" })`로 내부 walk. 중복 방지.
+- **Form 내부에서는 fallback 자동 off** — Form이 `ctx.walk(children, { fallback: "off", formAction })`로 내부 walk. 중복 방지.
+- **Form 내부 action 생략** (ADR 0013): `ctx.formAction === props.action` 이면 `action` 속성을 생략해 `::button[Label]` 로만 출력. 다른 action은 명시 유지 (Cancel/Save draft 패턴 수용).
 - **중복 의미 규범**: directive와 fallback link paragraph는 **동일 호출의 이중 표현**이다. AI는 한 번의 호출로 해석해야 한다.
 
 ### Input

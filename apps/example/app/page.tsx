@@ -12,27 +12,37 @@ export default function Home() {
         <li>
           <Link
             className="text-blue-600 underline hover:no-underline"
-            href="/users"
+            href="/dashboard"
           >
-            /users (HTML)
+            /dashboard (HTML, topbar layout)
           </Link>
-          <span className="text-gray-500"> — visit with</span>
-          <code className="mx-1 rounded bg-gray-100 px-1 py-0.5 text-sm">
-            Accept: text/markdown
-          </code>
-          <span className="text-gray-500">or append</span>
-          <code className="mx-1 rounded bg-gray-100 px-1 py-0.5 text-sm">
-            .md
-          </code>
-          <span className="text-gray-500">to see Markdown.</span>
+          <span className="text-gray-500"> · </span>
+          <Link
+            className="text-blue-600 underline hover:no-underline"
+            href="/dashboard.md"
+          >
+            /dashboard.md
+          </Link>
         </li>
         <li>
           <Link
             className="text-blue-600 underline hover:no-underline"
+            href="/users"
+          >
+            /users (HTML, sidebar layout)
+          </Link>
+          <span className="text-gray-500"> · </span>
+          <Link
+            className="text-blue-600 underline hover:no-underline"
             href="/users.md"
           >
-            /users.md (Markdown preview)
+            /users.md
           </Link>
+        </li>
+        <li className="text-sm text-gray-500">
+          Or append{" "}
+          <code className="mx-1 rounded bg-gray-100 px-1 py-0.5 text-sm">.md</code>{" "}
+          to any route — same React tree, different representation.
         </li>
       </ul>
     </main>

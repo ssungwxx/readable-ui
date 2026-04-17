@@ -11,6 +11,7 @@
 ## Research
 
 - [Markdown 요소 → View/Event 매핑 조사](./research/markdown-elements.md)
+- [LLM 친화성 검증 — ADR 0011 레이아웃](./research/llm-test-0011-layouts.md)
 
 ## Specs
 
@@ -29,6 +30,10 @@
 - [0008 — Engine strategy: React element walk](./adr/0008-engine-react-element-walk.md)
 - [0009 — Envelope extensions, Table row actions, serialization refinements](./adr/0009-envelope-extensions-and-serialization-refinements.md)
 - [0010 — Readable-UI Harness (Claude Code skill)](./adr/0010-harness-skill.md)
+- [0011 — Sidebar & topbar page layouts (admin 1차)](./adr/0011-sidebar-and-topbar-page-layouts.md)
+- [0012 — Dual-representation convention signaling](./adr/0012-dual-render-convention-signals.md)
+- [0013 — Form 내부 Button의 action 속성 생략](./adr/0013-suppress-form-inner-button-action.md)
+- [0014 — Global nav as envelope metadata](./adr/0014-nav-as-envelope-metadata.md)
 
 ## Open Decisions
 
@@ -44,6 +49,6 @@
 8. **v2 컴포넌트 registry 확장 정책** — 카탈로그 확장 규약
 9. **데이터 헤비 Table의 JSON payload 분리** — 200행+ 규약 (component-catalog 후속)
 10. **오버레이(Modal/Drawer/Popover) v2 지원 정책**
-11. **Layout 카탈로그 확장** — `tabs-page`, `split` 등 추가 레이아웃
+11. **Layout 카탈로그 추가 확장** — `tabs-page`, `split-page`, `detail` 등 (sidebar/topbar는 ADR 0011에서 확정)
 12. **ajv standalone 빌드 검증** — envelope Zod를 빌드-타임 검증으로 승격
 13. **린트 / GitHub Action 규약 자동화** — harness skill을 IDE 외부로 확장

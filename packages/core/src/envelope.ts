@@ -53,12 +53,32 @@ export const EnvelopeToolZ = z.object({
   constraints: z.array(ConstraintZ).optional(),
 });
 
+export const PageLayoutZ = z.enum(["flow", "sidebar", "topbar"]);
+export type PageLayout = z.infer<typeof PageLayoutZ>;
+
+export const NavItemZ = z.object({
+  label: z.string().min(1),
+  href: z.string().min(1),
+  active: z.boolean().optional(),
+});
+export type NavItem = z.infer<typeof NavItemZ>;
+
+export const NavScopeZ = z.enum(["global", "section"]);
+export type NavScope = z.infer<typeof NavScopeZ>;
+
+export const NavZ = z.object({
+  items: z.array(NavItemZ),
+  scope: NavScopeZ.optional(),
+});
+export type Nav = z.infer<typeof NavZ>;
+
 export const EnvelopeZ = z
   .object({
     title: z.string().min(1),
     purpose: z.string().optional(),
     role: z.union([z.string(), z.array(z.string())]).optional(),
-    layout: z.string().optional(),
+    layout: PageLayoutZ.optional(),
+    nav: NavZ.optional(),
     paths: PathsZ.optional(),
     constraints: z.array(ConstraintZ).optional(),
     pagination: PaginationZ.optional(),

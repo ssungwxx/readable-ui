@@ -1,6 +1,6 @@
 # ADR 0007 — Layout & component catalog (v1)
 
-- Status: Accepted
+- Status: Accepted (§2 revised by [ADR 0011](./0011-sidebar-and-topbar-page-layouts.md))
 - Date: 2026-04-17
 
 ## Context
@@ -20,11 +20,13 @@ readable-ui는 "변환된 Markdown이 AI에게 작은 컨텍스트로 이해 가
 
 ### 2. v1 허용 레이아웃 집합
 
-| id | 설명 | 직렬화 |
-|---|---|---|
-| `flow` | 기본. 세로 1차원 흐름. | 모든 블록이 위→아래 순서로 |
+| id | 설명 | 직렬화 | 도입 |
+|---|---|---|---|
+| `flow` | 기본. 세로 1차원 흐름. | 모든 블록이 위→아래 순서로 | 0007 |
+| `sidebar` | 좌측 수직 네비 + 우측 본문 (admin 쉘) | nav를 `## Navigation` + 링크 리스트로 body 앞에 flush, 배치 정보는 버림 | 0011 |
+| `topbar` | 상단 수평 네비 + 하단 본문 | `sidebar`와 동일 flush — 좌/위 차이는 시각 전용 | 0011 |
 
-이 한 개로 v1을 잠근다. 필요성이 입증되면 후속 ADR로 `tabs-page`, `split`, `dashboard` 등 추가.
+`flow` 단일로 v1을 잠갔던 원안은 admin 1차 검증에서 쉘 네비 필요성이 드러나 ADR 0011로 `sidebar`/`topbar` 2개를 추가 허용했다. 추가 레이아웃(`tabs-page`, `split-page`, `detail` 등)은 후속 ADR 대상.
 
 ### 3. v1 허용 컴포넌트 집합
 

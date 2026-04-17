@@ -18,6 +18,10 @@ export {
   PathsZ,
   ConstraintZ,
   JsonSchemaSubsetZ,
+  PageLayoutZ,
+  NavItemZ,
+  NavScopeZ,
+  NavZ,
   EnvelopeError,
   parseEnvelope,
 } from "./envelope.js";
@@ -27,6 +31,10 @@ export type {
   Constraint,
   Pagination,
   Paths,
+  PageLayout,
+  NavItem,
+  NavScope,
+  Nav,
 } from "./envelope.js";
 
 type DirectiveNode = ContainerDirective | LeafDirective | TextDirective;
@@ -36,10 +44,14 @@ export type FallbackMode = "on" | "off" | "link-only";
 
 export interface SerializeContext {
   depth: number;
-  walk: (node: unknown, override?: { fallback?: FallbackMode }) => MdNode[];
+  walk: (
+    node: unknown,
+    override?: { fallback?: FallbackMode; formAction?: string }
+  ) => MdNode[];
   envelope: Envelope | undefined;
   registerAction: (name: string) => void;
   fallback: FallbackMode;
+  formAction?: string;
 }
 
 export interface DualComponentSpec<P> {
@@ -79,6 +91,7 @@ export interface WalkOptions {
   envelope?: Envelope;
   onAction?: (name: string) => void;
   fallback?: FallbackMode;
+  formAction?: string;
 }
 
 export function walkTree(root: unknown, options: WalkOptions = {}): MdNode[] {
@@ -86,20 +99,26 @@ export function walkTree(root: unknown, options: WalkOptions = {}): MdNode[] {
     depth: 0,
     envelope: options.envelope,
     registerAction: (name: string) => options.onAction?.(name),
-    fallback: options.fallback ?? "on",
   };
-  const makeCtx = (fallback: FallbackMode): SerializeContext => {
+  const makeCtx = (
+    fallback: FallbackMode,
+    formAction: string | undefined
+  ): SerializeContext => {
     const ctx: SerializeContext = {
       ...base,
       fallback,
+      ...(formAction !== undefined ? { formAction } : {}),
       walk: (node, override) => {
-        const next = override?.fallback ?? fallback;
-        return walkNode(node, next === fallback ? ctx : makeCtx(next));
+        const nextFallback = override?.fallback ?? fallback;
+        const nextFormAction =
+          override && "formAction" in override ? override.formAction : formAction;
+        const same = nextFallback === fallback && nextFormAction === formAction;
+        return walkNode(node, same ? ctx : makeCtx(nextFallback, nextFormAction));
       },
     };
     return ctx;
   };
-  const root_ctx = makeCtx(base.fallback);
+  const root_ctx = makeCtx(options.fallback ?? "on", options.formAction);
   return walkNode(root, root_ctx);
 }
 
@@ -185,12 +204,31 @@ export function renderMarkdown(
   return serializeTree(nodes);
 }
 
+const CONVENTION_DUPLICATE_BUTTON_LINK = "duplicate-button-link";
+
+function withDefaultConventions(env: Envelope): Envelope {
+  const existing = env.extensions ?? {};
+  const conventionsRaw = existing.conventions;
+  const conventions =
+    conventionsRaw && typeof conventionsRaw === "object"
+      ? { ...(conventionsRaw as Record<string, unknown>) }
+      : {};
+  if (!(CONVENTION_DUPLICATE_BUTTON_LINK in conventions)) {
+    conventions[CONVENTION_DUPLICATE_BUTTON_LINK] = "dual-render";
+  }
+  return {
+    ...env,
+    extensions: { ...existing, conventions },
+  };
+}
+
 export function renderPage(
   root: ReactNode | ReactElement,
   envelope: Envelope,
   options: Omit<WalkOptions, "envelope"> = {}
 ): string {
-  const validated = parseEnvelope(envelope);
+  const parsed = parseEnvelope(envelope);
+  const validated = withDefaultConventions(parsed);
   const usedActions = new Set<string>();
   const nodes = walkTree(root, {
     ...options,
