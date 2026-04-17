@@ -1,0 +1,35 @@
+{
+  "name": "@readable-ui/next",
+  "version": "0.0.0",
+  "description": "Next.js adapter for readable-ui. Content negotiation between HTML and Markdown.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --external react --external next",
+    "dev": "tsup src/index.ts --format esm --dts --watch --external react --external next",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": ">=14",
+    "react": ">=18"
+  },
+  "dependencies": {
+    "@readable-ui/core": "workspace:*",
+    "@readable-ui/react": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "next": "^14.2.15",
+    "react": "^18.3.1"
+  }
+}

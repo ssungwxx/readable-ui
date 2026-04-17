@@ -1,0 +1,23 @@
+{
+  "name": "readable-ui",
+  "private": true,
+  "version": "0.0.0",
+  "description": "React UI components that serialize themselves to Markdown so agents can read and operate them.",
+  "packageManager": "pnpm@10.8.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" run build",
+    "dev": "pnpm -r --parallel --filter \"./packages/*\" run dev",
+    "typecheck": "pnpm -r --filter \"./packages/*\" run typecheck",
+    "clean": "pnpm -r exec rm -rf dist .turbo node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3",
+    "tsup": "^8.3.5"
+  },
+  "license": "MIT",
+  "author": "ssungwxx <sungwoo.dev@gmail.com>"
+}
