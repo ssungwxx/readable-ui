@@ -15,6 +15,7 @@
 ## Specs
 
 - [Page Envelope](./spec/page-envelope.md) — YAML frontmatter + JSON Schema tools
+- [Component Catalog (v1)](./spec/component-catalog.md) — 허용 컴포넌트·directive 직렬화
 
 ## Accepted ADRs
 
@@ -24,18 +25,21 @@
 - [0004 — MDX scope: author-time only](./adr/0004-mdx-scope.md)
 - [0005 — Page envelope: YAML frontmatter with JSON Schema tools](./adr/0005-page-envelope.md)
 - [0006 — Documentation language policy](./adr/0006-documentation-language.md)
+- [0007 — Layout & component catalog (v1)](./adr/0007-layout-and-component-catalog.md)
 
 ## Open Decisions
 
 아직 확정되지 않은 설계 지점 — 후속 ADR로 정리 예정:
 
-1. **허용 레이아웃·컴포넌트 카탈로그** (ADR 0007 예정) — `flow` 외에 허용할 레이아웃 집합, 허용 컴포넌트 목록. 사용자 의도 관점 2·5 핵심
-2. **React tree → mdast 변환 엔진 전략** (ADR 0008 예정) — element walk / offscreen reconciler / HTML 역파싱 중 택일
-3. **HTML inline 허용 정책** — 완전 허용(sanitize 화이트리스트) / 완전 금지 / 커스텀 엘리먼트만 허용
-4. **Callout 확장 범위** — GFM alert 5종 고정 vs directive로 info/success/error 보강
-5. **Form 상태(error/loading/disabled) 표현 위치** — 본문 인라인(`:::error`) vs envelope 선언 vs 이벤트 스트림
-6. **Table 편집 가능성** — read-only 고정 vs Markform 식 "table field"
-7. **Fallback 이중 직렬화 의무화** — directive + link-as-action 자동 병기를 기본으로 할지
-8. **fenced info string 생태계 정책** — `readable-ui:<subtype>` 네이밍 규칙 확정
-9. **정규형(normal form) 규정** — 같은 UI의 여러 Markdown 표기를 하나로 강제할지
-10. **AG-UI / MCP Apps와의 경계** — 이벤트 스트림까지 포함 vs 직렬화 레이어로만
+1. **React tree → mdast 변환 엔진 전략** (ADR 0008 예정) — element walk / offscreen reconciler / HTML 역파싱 중 택일
+2. **HTML inline 허용 정책** — 완전 허용(sanitize 화이트리스트) / 완전 금지 / 커스텀 엘리먼트만 허용
+3. **Alert 확장 범위** — GFM 5종 고정 vs info/success/error 보강
+4. **Form 상태(error/loading/disabled) 표현 위치** — 본문 인라인(`:::error`) vs envelope 선언 vs 이벤트 스트림
+5. **Table 편집 가능성** — read-only 고정 vs Markform 식 "table field"
+6. **Fallback 이중 직렬화 의무화** — directive + link-as-action 자동 병기를 기본으로 할지
+7. **fenced info string 생태계 정책** — `readable-ui:<subtype>` 네이밍 규칙 확정
+8. **정규형(normal form) 규정** — 같은 UI의 여러 Markdown 표기를 하나로 강제할지
+9. **AG-UI / MCP Apps와의 경계** — 이벤트 스트림까지 포함 vs 직렬화 레이어로만
+10. **v2 컴포넌트 registry 확장 정책** — 카탈로그 확장 규약
+11. **데이터 헤비 Table의 JSON payload 분리** — 200행+ 규약 (component-catalog 후속)
+12. **오버레이(Modal/Drawer/Popover) v2 지원 정책**
