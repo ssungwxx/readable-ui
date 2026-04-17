@@ -2,7 +2,7 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md)
 
 ## 카탈로그 밖은 전부 금지
 
@@ -77,16 +77,26 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 - Markdown: GFM table
 - HTML: `<table>`
-- Props: `columns: Column[]`, `rows: Row[]`, `align?: "left"|"center"|"right"[]`
+- Props:
+  - `columns: TableColumn<R>[]` — `{ key: keyof R, label: string, align? }`
+  - `rows: R[]` — `R`은 `{ id: string | number; ... }` 제약
+  - `actions?: TableRowAction<R>[]` — `{ tool, label, variant?, params: (row) => Record<string, primitive> }`
+  - `showIdColumn?: boolean` — 기본 true, id 열 자동 렌더
+  - `caption?: string`
+- 직렬화: GFM table + id 열 + actions 열. actions 셀은 `[Label](mcp://tool/<tool>?<params>)` link-as-action만 사용 (directive 금지).
 - **제약**: rowspan/colspan/중첩 테이블 불가. 200행 초과 시 warning — fenced JSON payload + preview 표로 분리 권장 (후속 spec).
 - 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
+- `actions[].tool`은 envelope `tools[]`에 선언된 이름이어야 함 (envelope 검증규칙 3).
+- **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 같은 이스케이프는 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
+- Generic 사용: `<Table<User> columns={...} rows={users} actions={...}/>` — wrapper 함수가 타입 추론 유지.
 
 ### Alert
 
 - Markdown: `> [!NOTE]` / `> [!TIP]` / `> [!IMPORTANT]` / `> [!WARNING]` / `> [!CAUTION]`
 - HTML: `<blockquote>` + 아이콘 class
 - Props: `kind: note|tip|important|warning|caution`, `children: block nodes`
-- Note: GFM alert 5종 고정. `info/success/error`는 의미 매핑(`info→note`, `success→tip`, `error→warning`) 또는 후속 ADR에서 확장.
+- 직렬화: `@readable-ui/core`의 `gfmAlertHandler`가 `blockquote` handler override하여 `[!KIND]` 헤더를 raw로 조립 — 이스케이프(`\[`) 없음, blank-line `>` 없음. mdast 노드에 `data.gfmAlert: kind` 마커 필요.
+- GFM alert 5종 고정. `info/success/error`는 의미 매핑(`info→note`, `success→tip`, `error→warning`) 또는 후속 ADR에서 확장.
 
 ### CodeBlock
 
@@ -188,18 +198,32 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 - Markdown: `::button[Label]{action=<toolName> variant=primary|secondary|danger}`
 - HTML: `<button>`
-- Fallback(ADR 0001 예정 자동 병기): `[Label](mcp://tool/<toolName>)`
+- **Link-as-action fallback 자동 병기** (ADR 0001 이행 / ADR 0009): directive 뒤에 `[Label](mcp://tool/<toolName>)` paragraph가 함께 출력된다.
+- Fallback 토글: `renderMarkdown(node, { fallback: "on" | "off" | "link-only" })`. 기본 `"on"`.
+- **Form 내부에서는 fallback 자동 off** — Form이 `ctx.walk(children, { fallback: "off" })`로 내부 walk. 중복 방지.
+- **중복 의미 규범**: directive와 fallback link paragraph는 **동일 호출의 이중 표현**이다. AI는 한 번의 호출로 해석해야 한다.
 
 ### Input
 
-- Markdown: `::input{name=<field> type=text|email|password|number|url|date|datetime-local required}`
-- HTML: `<input>`
-- Note: form context 안에서만 유효.
+- Markdown: `::input{name=<field> type=<html5> label="..." required pattern="..." minlength="n" maxlength="n" min="n" max="n" step="n" format="..."}`
+- HTML: `<input>` — HTML5 validation 속성과 1:1 매핑
+- Props: `{ name, type?, label?, required?, placeholder?, pattern?, minLength?, maxLength?, min?, max?, step?, format? }`
+- `type` 허용: `text | email | password | number | url | date | datetime-local | tel | search`
+- JSON Schema 매핑:
+  - `format: email` → `type="email"` 또는 attribute `format`
+  - `pattern` → `pattern`
+  - `minLength` / `maxLength` → `minlength` / `maxlength` (HTML5 lowercase)
+  - `minimum` / `maximum` → `min` / `max`
+- Boolean attribute (`required`)는 value 없이(`::input{... required}`) 출력 — `attributes.required = ""`.
+- Form context 안에서만 유효.
 
 ### Select
 
-- Markdown: `::select{name=<field> options="a,b,c" required}`
+- Markdown: `::select{name=<field> options="a,b,c" label="..." required multiple}`
 - HTML: `<select>`
+- Props: `{ name, options: string[], label?, required?, multiple? }`
+- JSON Schema `enum: [...]`을 본문에 `options="..."`로 노출 — envelope ↔ 본문 스키마 대칭 보장.
+- `options` 값에 쉼표 포함 시 향후 JSON 배열 문자열로 표기 권고 (현재 비지원).
 
 ### Textarea
 
@@ -220,8 +244,10 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`은 built-in 의미로 예약. 다른 용도로 overload 금지.
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `min`, `max`, `step`, `format`, `multiple`은 built-in 의미로 예약. 다른 용도로 overload 금지.
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
+5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).
+6. **셀 이스케이프 수용**: Table 셀 내부의 `\_`, `\@` 등은 round-trip clean 동작. 버그 아님.
 
 ## 미정 / 후속
 
