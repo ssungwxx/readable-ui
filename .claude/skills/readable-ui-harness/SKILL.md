@@ -1,6 +1,6 @@
 ---
 name: readable-ui-harness
-description: readable-ui 저장소에서 코드·문서를 편집할 때 따라야 할 설계 규약. envelope·컴포넌트 카탈로그·ADR 간 정합을 유지하도록 Claude의 판단을 유도한다. `packages/`, `docs/`, `apps/` 어느 경로든 편집 대상일 때 참조.
+description: readable-ui 저장소(`packages/core`, `packages/react`, `packages/mcp`, `packages/next`, `apps/example`, `docs/adr/*`, `docs/spec/*`) 의 어떤 파일이든 편집하기 전에 반드시 먼저 열어야 하는 설계 규약. `defineDualComponent` 신규 호출, `Envelope`/`renderMarkdown`/`renderPage` 시그니처 변경, `Table`·`Card`·`Form`·`Button`·`Input`·`Select`·`Alert` 등 카탈로그 컴포넌트 수정, 새 컴포넌트 추가 요청, directive 속성·예약어 변경, envelope 필드 추가, `fallback` 모드 조정, ADR 추가/개정, component-catalog 또는 page-envelope spec 수정, 셀 이스케이프·directive+link 중복 관련 이슈 해석 시 **항상 이 skill을 가장 먼저 참조**한다. 이 프로젝트는 과거 ADR↔코드↔spec 드리프트가 반복되어 검증 사이클이 낭비됐으므로, 편집을 시작하기 전에 카탈로그 닫힘·3중 동기화 체크리스트·예약어 목록·문서 언어 정책을 확인해야 한다.
 ---
 
 # readable-ui harness
