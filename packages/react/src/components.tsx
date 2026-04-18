@@ -506,7 +506,7 @@ export const Form = defineDualComponent<FormProps>({
 
 export interface InputProps {
   name: string;
-  type?: "text" | "email" | "password" | "number" | "url" | "date" | "datetime-local" | "tel" | "search";
+  type?: "text" | "email" | "password" | "number" | "url" | "date" | "datetime-local" | "tel" | "search" | "hidden";
   label?: string;
   required?: boolean;
   placeholder?: string;
@@ -521,33 +521,52 @@ export interface InputProps {
 }
 export const Input = defineDualComponent<InputProps>({
   name: "input",
-  render: ({ name, type = "text", label, required, placeholder, pattern, minLength, maxLength, min, max, step, defaultValue }) => (
-    <label className="flex flex-col gap-1.5 text-sm">
-      {label ? (
-        <span className="font-medium text-slate-700">
-          {label}
-          {required ? (
-            <span className="ml-0.5 text-red-500" aria-label="required">*</span>
-          ) : null}
-        </span>
-      ) : null}
-      <input
-        name={name}
-        type={type}
-        required={required}
-        placeholder={placeholder}
-        pattern={pattern}
-        minLength={minLength}
-        maxLength={maxLength}
-        min={min}
-        max={max}
-        step={step}
-        defaultValue={defaultValue}
-        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 shadow-sm transition-shadow focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-      />
-    </label>
-  ),
+  render: ({ name, type = "text", label, required, placeholder, pattern, minLength, maxLength, min, max, step, defaultValue }) => {
+    // ADR 0020 §1: hidden input — no label wrapper, just a bare <input type="hidden">
+    if (type === "hidden") {
+      return (
+        <input type="hidden" name={name} value={defaultValue != null ? String(defaultValue) : undefined} />
+      );
+    }
+    return (
+      <label className="flex flex-col gap-1.5 text-sm">
+        {label ? (
+          <span className="font-medium text-slate-700">
+            {label}
+            {required ? (
+              <span className="ml-0.5 text-red-500" aria-label="required">*</span>
+            ) : null}
+          </span>
+        ) : null}
+        <input
+          name={name}
+          type={type}
+          required={required}
+          placeholder={placeholder}
+          pattern={pattern}
+          minLength={minLength}
+          maxLength={maxLength}
+          min={min}
+          max={max}
+          step={step}
+          defaultValue={defaultValue}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 shadow-sm transition-shadow focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        />
+      </label>
+    );
+  },
   toMarkdown: ({ name, type, label, required, placeholder, pattern, minLength, maxLength, min, max, step, format, defaultValue }) => {
+    // ADR 0020 §1: hidden input — only name + default are meaningful
+    if (type === "hidden") {
+      const attrs: Record<string, string> = { name, type: "hidden" };
+      if (defaultValue != null && defaultValue !== "") attrs.default = String(defaultValue);
+      return {
+        type: "leafDirective",
+        name: "input",
+        attributes: attrs,
+        children: [] as never,
+      };
+    }
     const attrs: Record<string, string> = { name };
     if (type && type !== "text") attrs.type = type;
     if (label) attrs.label = label;
@@ -910,6 +929,8 @@ export interface TableProps<R extends { id: string | number }> {
   sort?: string;
   mode?: "summary";
   filter?: Record<string, string | number | boolean>;
+  /** ADR 0020 §4: set to "silent" to suppress the auto-injected fallback Alert when rows is empty */
+  empty?: "silent";
 }
 
 type AnyRow = { id: string | number; [k: string]: unknown };
@@ -1195,11 +1216,51 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       sort,
       mode,
       filter,
+      empty,
     },
     ctx
   ) => {
     if (tool) ctx.registerAction(tool);
     for (const a of actions) ctx.registerAction(a.tool);
+
+    // ADR 0020 §3: collect enum sets for auto CodeSpan wrap
+    // Condition (a): _filter_<col>.enum from the tool's input schema
+    // Condition (b): output schema enum for the column key
+    // Condition (c): tool names in the envelope (for action columns like audit.action)
+    const colEnums = new Map<string, Set<string>>();
+    const toolNames = new Set<string>(
+      (ctx.envelope?.tools ?? []).map((t) => t.name)
+    );
+    if (tool && ctx.envelope?.tools) {
+      const toolDef = ctx.envelope.tools.find((t) => t.name === tool);
+      if (toolDef) {
+        // Condition (a): _filter_<col>.enum
+        if (toolDef.input?.properties) {
+          for (const [paramKey, paramSchema] of Object.entries(toolDef.input.properties)) {
+            const match = /^_filter_(.+)$/.exec(paramKey);
+            if (match && match[1] && Array.isArray((paramSchema as { enum?: unknown[] }).enum)) {
+              const colKey: string = match[1];
+              const enumVals = new Set<string>(
+                ((paramSchema as { enum: unknown[] }).enum).map(String)
+              );
+              colEnums.set(colKey, enumVals);
+            }
+          }
+        }
+        // Condition (b): output schema enum per column
+        if (toolDef.output?.properties) {
+          for (const [colKey, colSchema] of Object.entries(toolDef.output.properties)) {
+            if (Array.isArray((colSchema as { enum?: unknown[] }).enum)) {
+              const existing = colEnums.get(colKey) ?? new Set<string>();
+              for (const v of (colSchema as { enum: unknown[] }).enum) {
+                existing.add(String(v));
+              }
+              colEnums.set(colKey, existing);
+            }
+          }
+        }
+      }
+    }
 
     const textCell = (value: string): MdNode => ({
       type: "tableCell",
@@ -1237,13 +1298,22 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
                 } as MdNode,
               ]
             : []),
-          ...columns.map(
-            (c) =>
-              ({
-                type: "tableCell",
-                children: [{ type: "text", value: String(r[c.key] ?? "") } as MdNode] as never,
-              }) as MdNode
-          ),
+          ...columns.map((c) => {
+            const rawVal = String(r[c.key] ?? "");
+            // ADR 0020 §3: auto-wrap cell value in inlineCode if it matches an enum
+            // from the tool's input filter schema (a), output schema (b), or a tool name (c).
+            const colEnum = colEnums.get(String(c.key));
+            const shouldWrap =
+              rawVal !== "" &&
+              ((colEnum && colEnum.has(rawVal)) || toolNames.has(rawVal));
+            const cellChild: MdNode = shouldWrap
+              ? ({ type: "inlineCode", value: rawVal } as MdNode)
+              : ({ type: "text", value: rawVal } as MdNode);
+            return {
+              type: "tableCell",
+              children: [cellChild] as never,
+            } as MdNode;
+          }),
           ...(actions.length
             ? [
                 {
@@ -1304,12 +1374,32 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       });
     }
 
-    return {
+    const tableNode: MdNode = {
       type: "containerDirective",
       name: "table",
       attributes: attrs,
       children: childrenNodes as never,
     };
+
+    // ADR 0020 §4: EmptyState fallback — when rows is empty and no explicit opt-out,
+    // emit a sibling Alert(kind=note, "No results") after the table directive.
+    // The blockquote uses the same gfmAlert marker as Alert.toMarkdown — gfmAlertHandler
+    // will prepend "> [!NOTE]" and render the children as the body.
+    if (rows.length === 0 && empty !== "silent") {
+      const fallbackAlert: MdNode = {
+        type: "blockquote",
+        data: { gfmAlert: "note" } as never,
+        children: [
+          {
+            type: "paragraph",
+            children: [{ type: "text", value: "No results." } as MdNode] as never,
+          } as MdNode,
+        ] as never,
+      };
+      return [tableNode, fallbackAlert];
+    }
+
+    return tableNode;
   },
 });
 

@@ -2,7 +2,7 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md)
 
 ## 구조
 
@@ -12,6 +12,7 @@ title: <string, required>
 purpose: <string, optional>
 role: <string | string[], optional>
 layout: <layout-id, optional>
+intent: <"destructive-confirm", optional>  # ADR 0020 §5
 paths:
   view: <string, required within paths>
   markdown: <string, optional>
@@ -91,6 +92,14 @@ nav:
 
 envelope `layout` 과 `<Page layout>` prop은 일치시키는 것이 권장. 불일치 시 warning.
 
+#### `intent` (optional, enum) — ADR 0020 §5
+
+파괴적(destructive) action 의 2단계 confirm 페이지임을 나타내는 envelope 레벨 단일 신호. preview tool 호출이 반환하는 page-envelope 에 둔다.
+
+- 값 enum (v1): `"destructive-confirm"` — preview 응답 페이지. 본문 Form 제출 시 실제 destructive action 이 발생함을 LLM 에 명시.
+- envelope `tools[]` 에는 실제 action(예: `deleteUser`) 만 등재. preview tool 은 이미 호출됐으므로 다시 등재할 필요 없음.
+- v2 enum 확장 후보: `"reversible-confirm"`, `"bulk-confirm"` 등 (현재 미정).
+
 #### `paths` (optional, object)
 
 - `view` (required within `paths`): 이 페이지의 HTML 뷰 경로
@@ -159,6 +168,7 @@ JSON Schema subset 지원 키워드: `type`, `properties`, `required`, `items`, 
 8. **`paths.view` 누락** (v1 하위호환) → **warning** → v2에서 error 승격 예정
 9. **pagination 교차 일관성** — envelope `pagination.total`과 Table directive 메타(`of`·`size`·row 수)가 불일치하면 `warning` (향후 구현). Table directive가 있으면 directive 우선 (ADR 0015 §4).
 10. **Table directive ↔ envelope pagination 공존** — envelope `pagination`이 있고 페이지에 Table directive가 2개 이상이면 `warning` (어느 Table의 상태인지 모호). 1개이고 값이 불일치해도 `warning` (directive 우선).
+11. **`intent` enum 위반** — `intent` 값이 허용 enum 외(현재 v1 한정 `"destructive-confirm"` 1종) 이면 → **error** (Zod). v2 에서 `"reversible-confirm"` 등 확장 시 본 enum 갱신.
 
 ## 예시
 

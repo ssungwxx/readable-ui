@@ -40,6 +40,7 @@
 - [0017 — JSX prop ↔ Markdown attribute 명명 규칙](./adr/0017-jsx-markdown-attribute-naming.md)
 - [0018 — Detail view convention](./adr/0018-detail-view-convention.md)
 - [0019 — CRUD 액션 관용구: Delete 확인 · EmptyState · 행 상태](./adr/0019-crud-action-idioms.md)
+- [0020 — CRUD idiom gaps closure: 2단계 삭제·자동 CodeSpan·EmptyState fallback](./adr/0020-close-crud-idiom-gaps.md)
 
 ## Open Decisions
 
@@ -49,11 +50,11 @@
 2. **Alert 확장 범위** — GFM 5종 고정 vs info/success/error 보강
 3. **Form 상태(error/loading/disabled) 표현 위치** — 본문 인라인(`:::error`) vs envelope 선언 vs 이벤트 스트림
 4. **Table 편집 가능성** — read-only 고정 vs Markform 식 "table field"
-5. **fenced info string 생태계 정책** — `readable-ui:<subtype>` 네이밍 규칙 확정 (`readable-ui:pagination` 등)
+5. ~~**fenced info string 생태계 정책**~~ (폐기됨 — #9 로 흡수)
 6. **정규형(normal form) 규정** — 같은 UI의 여러 Markdown 표기를 하나로 강제할지
 7. **AG-UI / MCP Apps와의 경계** — 이벤트 스트림까지 포함 vs 직렬화 레이어로만
 8. **v2 컴포넌트 registry 확장 정책** — 카탈로그 확장 규약
-9. **데이터 헤비 Table의 JSON payload 분리** — 200행+ 규약 (component-catalog 후속)
+9. **데이터 헤비 Table의 JSON payload 분리** — 200행+ Table 데이터의 `readable-ui:data` fenced payload 분리. fenced info string naming convention(`readable-ui:<subtype>`) 포함 (구 #5 흡수)
 10. **오버레이(Modal/Drawer/Popover) v2 지원 정책**
 11. **Layout 카탈로그 추가 확장** — `tabs-page`, `split-page`, `detail` 등 (sidebar/topbar는 ADR 0011에서 확정)
 12. **ajv standalone 빌드 검증** — envelope Zod를 빌드-타임 검증으로 승격

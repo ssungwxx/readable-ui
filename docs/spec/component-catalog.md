@@ -192,9 +192,9 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 시 warning — `readable-ui:data` fenced payload 분리 경로는 후속 ADR. 2열 transpose를 단건 상세 용도로 사용 금지 (ADR 0018).
 - 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
 
-**`rows: []` 처리 (ADR 0019 §2)**: 엔진은 자동 placeholder를 삽입하지 않는다. `total=0` attribute 명시 권장, 저자가 Table 형제 레벨에 `Alert{kind=note}`를 배치한다.
+**`rows: []` 처리 (ADR 0019 §2 + ADR 0020 §4)**: 엔진은 directive 내부에 placeholder 행을 삽입하지 않는다. `total=0` attribute 명시 권장, 저자가 Table 형제 레벨에 `Alert{kind=note}`를 배치한다. 형제 Alert 부재 시 엔진이 기본 Alert(kind=note, "No results") 을 자동 삽입(directive 외부 형제 노드). `<Table empty="silent">` prop 으로 fallback 옵트아웃.
 
-**행 상태 표기 (ADR 0019 §3)**: Table 셀 내부 상태 값은 `CodeSpan`으로 표기한다. 5단계 권고 팔레트(비강제): `active`, `pending`, `archived`, `disabled`, `error`. 도메인 특수 상태도 CodeSpan이면 허용. v1은 시각 강제 없음 — Table React render는 `String()` plain text 유지, v2에서 render override 예약.
+**행 상태 표기 (ADR 0019 §3 + ADR 0020 §3)**: Table 셀 내부 상태 값은 `CodeSpan`으로 표기한다. 5단계 권고 팔레트(비강제): `active`, `pending`, `archived`, `disabled`, `error`. 도메인 특수 상태도 CodeSpan이면 허용. 엔진은 envelope `tools[]` 의 `input.properties._filter_<col>.enum`·`output` schema enum·또는 `tools[].name` 집합과 셀 값이 정확히 일치하면 자동으로 `inlineCode` 로 wrap 한다 (schema-driven). 신호 부재 시 plain String 유지(후방 호환). v1 시각 강제 없음 — Table React render 는 `String()` plain text, v2 에서 render override 예약.
 - `tool` 및 `actions[].tool`은 envelope `tools[]`에 선언된 이름이어야 함 (envelope 검증규칙 3).
 - envelope `pagination`과 directive `page/of/size`가 공존하면 directive 우선, 불일치 시 warning (ADR 0015 §4).
 - **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 등은 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
@@ -280,7 +280,8 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - Markdown: `::input{name=<field> type=<html5> label="..." required pattern="..." minlength="n" maxlength="n" min="n" max="n" step="n" format="..." default="..."}`
 - HTML: `<input>` — HTML5 validation 속성과 1:1 매핑
 - Props: `{ name, type?, label?, required?, placeholder?, pattern?, minLength?, maxLength?, min?, max?, step?, format?, defaultValue? }`
-- `type` 허용: `text | email | password | number | url | date | datetime-local | tel | search`
+- `type` 허용: `text | email | password | number | url | date | datetime-local | tel | search | hidden`
+- `type=hidden` (ADR 0020 §1): 사용자 입력이 아니라 form 제출에 동봉할 사전 설정 값을 전달한다. `name` 과 `default` 만 의미 있음 (`label`/`placeholder`/`required`/`pattern`/`minlength`/`maxlength`/`min`/`max`/`step`/`format` 무시). HTML render 는 label wrapper 없이 `<input type="hidden" name="..." value="...">`. 직렬화: `::input{type=hidden name=id default=u_bob_01}`. Form context 외부 사용은 warning (v2 error 승격 검토).
 - JSON Schema 매핑:
   - `format: email` → `type="email"` 또는 attribute `format`
   - `pattern` → `pattern`
@@ -337,7 +338,7 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `empty`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. `type` attribute 의 enum 값은 컴포넌트별 고정 (Input: `text|email|password|number|url|date|datetime-local|tel|search|hidden` — ADR 0020 §1). Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
    JSX prop ↔ Markdown attribute 명명은 [ADR 0017](../adr/0017-jsx-markdown-attribute-naming.md) 참조.
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
 5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).

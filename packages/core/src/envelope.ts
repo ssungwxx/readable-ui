@@ -85,6 +85,8 @@ export const EnvelopeZ = z
     updatedAt: z.string().optional(),
     tools: z.array(EnvelopeToolZ).optional(),
     extensions: z.record(z.string(), z.unknown()).optional(),
+    /** ADR 0020 §5: envelope-level intent marker for destructive confirm pages */
+    intent: z.enum(["destructive-confirm"]).optional(),
   })
   .strict();
 

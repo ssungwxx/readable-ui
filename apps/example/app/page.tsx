@@ -37,6 +37,13 @@ const routes: SampleRoute[] = [
     layout: "sidebar",
     blurb: "Immutable feed — filter + sort + paginated summary, view-only rows.",
   },
+  {
+    href: "/jobs",
+    mdHref: "/jobs.md",
+    title: "Background jobs",
+    layout: "sidebar",
+    blurb: "Background jobs — empty state and 5-stage status palette fixture.",
+  },
 ];
 
 export default function Home() {

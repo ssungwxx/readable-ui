@@ -18,14 +18,18 @@ interface User extends Record<string, unknown> {
   id: string;
   email: string;
   role: "admin" | "user";
-  status: "active" | "inactive";
+  // ADR 0020 §6 / ADR 0019 §3: 5-stage palette
+  status: "active" | "pending" | "archived" | "disabled" | "error";
   createdAt: string;
 }
 
 const sampleUsers: User[] = [
   { id: "u_alice_01", email: "alice@example.com", role: "admin", status: "active", createdAt: "2026-04-12" },
   { id: "u_bob_01", email: "bob@example.com", role: "user", status: "active", createdAt: "2026-04-10" },
-  { id: "u_carol_01", email: "carol@example.com", role: "user", status: "active", createdAt: "2026-04-08" },
+  { id: "u_carol_01", email: "carol@example.com", role: "user", status: "pending", createdAt: "2026-04-08" },
+  { id: "u_dave_02", email: "dave@example.com", role: "user", status: "disabled", createdAt: "2026-03-30" },
+  { id: "u_legacy_07", email: "legacy@example.com", role: "user", status: "archived", createdAt: "2025-12-01" },
+  { id: "u_err_03", email: "errbob@example.com", role: "user", status: "error", createdAt: "2026-04-15" },
 ];
 
 const PAGE_SIZE = 20;
@@ -45,7 +49,7 @@ export const usersEnvelope: Envelope = {
     view: "/users",
     markdown: "/users.md",
   },
-  updatedAt: "2026-04-17T00:00:00Z",
+  updatedAt: "2026-04-18T00:00:00Z",
   constraints: [
     {
       id: "delete-irreversible",
@@ -75,7 +79,11 @@ export const usersEnvelope: Envelope = {
             pattern: "^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$",
             default: "createdAt:desc",
           },
-          _filter_status: { type: "string", enum: ["active", "inactive"] },
+          // ADR 0020 §6: full 5-stage palette enum for auto CodeSpan wrap (ADR 0020 §3)
+          _filter_status: {
+            type: "string",
+            enum: ["active", "pending", "archived", "disabled", "error"],
+          },
           _filter_role: { type: "string", enum: ["admin", "user"] },
         },
       },
@@ -106,6 +114,18 @@ export const usersEnvelope: Envelope = {
           id: { type: "string" },
           role: { type: "string", enum: ["admin", "user"] },
         },
+        required: ["id"],
+      },
+    },
+    {
+      // ADR 0020 §2: preview tool — pair with deleteUser. naming: <verb><Resource>Preview
+      name: "deleteUserPreview",
+      title: "Preview delete user",
+      description: "Return a confirmation page before permanently deleting a user.",
+      role: "admin",
+      input: {
+        type: "object",
+        properties: { id: { type: "string" } },
         required: ["id"],
       },
     },
@@ -160,8 +180,9 @@ export function UsersPage() {
             params: (r) => ({ id: r.id }),
           },
           {
-            tool: "deleteUser",
-            label: "Delete",
+            // ADR 0020 §2: 1st step uses deleteUserPreview (label has … suffix, variant=danger)
+            tool: "deleteUserPreview",
+            label: "Delete\u2026",
             variant: "danger",
             params: (r) => ({ id: r.id }),
           },
