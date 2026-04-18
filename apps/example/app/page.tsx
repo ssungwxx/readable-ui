@@ -28,7 +28,7 @@ const routes: SampleRoute[] = [
     mdHref: "/reports.md",
     title: "Reports",
     layout: "topbar",
-    blurb: "Mixed composition — stat cards, weekly table, revenue by plan, export.",
+    blurb: "Stat / Progress / Descriptions directives — KPI, quota bars, metadata, and exportable tables.",
   },
   {
     href: "/audit",
@@ -49,7 +49,7 @@ const routes: SampleRoute[] = [
     mdHref: "/users/u_alice_01.md",
     title: "User detail (Alice)",
     layout: "detail",
-    blurb: "Single-resource view — back nav, profile + meta rail, footer destructive action.",
+    blurb: "Single-resource view — breadcrumb, Descriptions profile/meta rail, destructive footer.",
   },
 ];
 
