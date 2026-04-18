@@ -2,7 +2,7 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0022](../adr/0022-table-payload-fenced.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0022](../adr/0022-table-payload-fenced.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md)
 
 ## 카탈로그 밖은 전부 금지
 
@@ -21,7 +21,8 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - Props:
   - `layout?: "flow" | "sidebar" | "topbar" | "detail"` — envelope `layout`과 일치해야 함 (불일치 시 warning, 미선언 시 `flow`)
   - `nav?: NavItem[]` — `NavItem = { label: string; href: string; active?: boolean }` (하위호환, envelope `nav.items` 사용 권장)
-  - `back?: { label: string; href: string }` — detail layout 전용. main 위에 `← Back to <label>` 링크 1개 (ADR 0021 §2)
+  - `back?: { label: string; href: string }` — detail layout 전용. main 위에 `← Back to <label>` 링크 1개 (ADR 0021 §2). `breadcrumb` (2+ items) 존재 시 자동 무음 생략 (ADR 0024 §4).
+  - `breadcrumb?: Array<{ label: string; href?: string }>` — 계층 경로 (ADR 0024 §4). 2개 이상 항목이어야 출력. envelope `breadcrumb` 존재 시 envelope 우선. 마지막 항목 `href` 생략 = 현재 위치.
   - `meta?: ReactNode` — detail layout 전용. 우측 rail (HTML); Markdown 은 main 뒤로 flush (ADR 0021 §3)
   - `footer?: ReactNode` — detail layout 전용. 하단 액션 영역 (HTML); Markdown 은 meta 뒤로 flush
   - `children: block nodes` — main column 본문
@@ -66,9 +67,10 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
   - heading은 `##` 고정, 텍스트는 `Navigation` 고정 (i18n v2).
   - 좌/위/detail rail 배치 차이는 시각 전용 — Markdown 출력 동일.
   - `nav`가 비어 있거나 `layout="flow"` 면 prepend 없음 — `flow` 와 완전히 동일한 body 출력.
-  - detail layout 의 직렬화 순서 고정: `nav → back → main(children) → meta → footer` (ADR 0021 §3). main 뒤 meta 순은 "주 내용 우선" 원칙 — 상세 페이지 진입 직후 첫 토큰에 주 내용이 들어가도록.
+  - detail layout 의 직렬화 순서 고정: `nav → breadcrumb → back → main(children) → meta → footer` (ADR 0021 §3 + ADR 0024 §4). main 뒤 meta 순은 "주 내용 우선" 원칙 — 상세 페이지 진입 직후 첫 토큰에 주 내용이 들어가도록.
   - back link 텍스트는 `← Back to <label>` (U+2190 + space + "Back to " + label) 영어 single-source 고정. i18n v2.
-  - `back`/`meta`/`footer` 를 `layout!=="detail"` 에서 전달해도 무음 무시 (warning 아님). v2 lint 검토.
+  - breadcrumb 는 nav 뒤 · back 앞 paragraph 1줄 (ADR 0024 §4). 항목 구분자는 ` › ` (space + U+203A + space). 각 항목은 `href` 있으면 `[label](href)` link, 없으면 plain text. 2+ items 일 때만 출력 — 1개 또는 미선언이면 무음 skip. breadcrumb 가 2+ items 를 포함하면 같은 페이지의 `back` 은 자동 무음 생략.
+  - `back`/`meta`/`footer` 를 `layout!=="detail"` 에서 전달해도 무음 무시 (warning 아님). v2 lint 검토. `breadcrumb` 는 모든 layout 에서 유효.
 
 ## Atomic
 
@@ -172,6 +174,26 @@ CommonMark 0.30 §4.5 의 info string 정의를 그대로 따르며, 콜론(`:`)
 | `readable-ui:data` | ADR 0022 | `:::table{... mode=payload}` 내부 자식 | JSONL — 줄당 한 JSON 객체 |
 
 `readable-ui:actions`, `readable-ui:filters`, `readable-ui:schema` 등 다른 subtype 은 v1 에 정의되지 않는다 — 후속 ADR 개별 결정. 본 prefix 자체는 ecosystem-grabbing 회피 + 짧은 namespace 의 trade-off 로 채택 (ADR 0022 §1 대안 평가).
+
+### Stat (ADR 0024 §1)
+
+수치 지표 카드 (KPI / Statistic). Admin dashboard 전용.
+
+- Markdown: `::stat[<value>]{label="..." delta="+12.4%" trend=up unit="MRR"}`
+- HTML: `<section class="rui-stat">` — label · 큰 숫자 · (trend badge + delta) 3단 배치.
+- Props: `{ label: string, value: string, delta?: string, trend?: "up"|"down"|"flat", unit?: string }`
+- 저자 책임: `value` / `delta` 는 포맷 완료된 문자열 (`"$48.2K"`, `"+12.4%"`). 엔진은 해석하지 않음.
+- Fallback 병기 (ADR 0012 이중 표현 규약): directive 뒤에 `**value** · delta (label-or-unit)` paragraph. Form 내부 사용은 의미 외 — `renderMarkdown({ fallback: "off" })` 로 억제 가능.
+
+### Progress (ADR 0024 §2)
+
+진행률 / 사용량 바.
+
+- Markdown: `::progress{value=720 max=1000 label=Storage variant=warning}`
+- HTML: `<div role="progressbar" aria-valuenow aria-valuemin aria-valuemax>` + 색 bar.
+- Props: `{ value: number, max?: number (default 100), label?: string, variant?: "primary"|"success"|"warning"|"danger" }`
+- `variant` 팔레트: `primary` 파랑 / `success` 녹 (Alert tip 계열) / `warning` 주황 (Alert warning 계열) / `danger` 빨강 (Alert caution 계열). default `primary`.
+- Fallback 병기: `<value> / <max> (<pct>%) — <label>` paragraph. `label` 미선언 시 ` — …` 접미 생략.
 
 ## Container (자식 블록 flow)
 
@@ -393,7 +415,7 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `empty`, `payload`, `payloadhead`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. `type` attribute 의 enum 값은 컴포넌트별 고정 (Input: `text|email|password|number|url|date|datetime-local|tel|search|hidden` — ADR 0020 §1). Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `empty`, `payload`, `payloadhead`, `trend`, `delta`, `unit`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. `type` attribute 의 enum 값은 컴포넌트별 고정 (Input: `text|email|password|number|url|date|datetime-local|tel|search|hidden` — ADR 0020 §1). `variant` enum 은 컴포넌트별 고정 (Button: `primary|secondary|danger` — ADR 0007; Progress: `primary|success|warning|danger` — ADR 0024 §2). Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
    JSX prop ↔ Markdown attribute 명명은 [ADR 0017](../adr/0017-jsx-markdown-attribute-naming.md) 참조.
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
 5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).
@@ -414,6 +436,7 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
    - 각 ListItem 내부: `Strong(field) + ": " + inline value`. 인라인은 text/Emphasis/Strong/CodeSpan/Link만.
    - 빈 값: `*none*`. null/-/"—" 혼용 금지.
    - 2열 Table transpose는 단건 상세 용도 사용 금지 — ADR 0015와 의미 오버로드 회피.
+   - JSX convenience wrapper: `<Descriptions title items={[{term, value}]}>` (ADR 0024 §3) — 새 directive name 등록 아님. 내부에서 `<Card>` + `<List>` + `<ListItem>` + `<Strong>` 로 분해되어 Markdown 은 본 정규형과 완전히 동일하게 출력된다. 빈 `value` (null/undefined/"") 는 자동으로 `*none*` 으로 치환.
 
 9. **위험 동작 관용구 (ADR 0019)**: destructive tool은 1단계 `::button[<Verb>…]{variant=danger action=<verb><Resource>Preview}` → 2단계 preview 페이지 (Card + `Alert{kind=caution}` + Form)의 2단계 전이로 호출한다. Button `confirm` 속성은 v1 미지원.
 

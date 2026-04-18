@@ -9,11 +9,9 @@ import {
   Form,
   Input,
   Button,
-  List,
-  ListItem,
-  Strong,
   CodeSpan,
   Table,
+  Descriptions,
 } from "@readable-ui/react/components";
 import type { Envelope } from "@readable-ui/react";
 import { withActive } from "../../_shared/admin-nav";
@@ -121,6 +119,11 @@ export function makeUserDetailEnvelope(id: string): Envelope {
     role: "admin",
     layout: "detail",
     nav: { items: withActive("/users") },
+    // ADR 0024 §4: breadcrumb replaces the single-link `back` idiom for nested resources.
+    breadcrumb: [
+      { label: "Users", href: "/users" },
+      { label: user.name },
+    ],
     paths: {
       view: `/users/${id}`,
       markdown: `/users/${id}.md`,
@@ -182,24 +185,21 @@ export function UserDetailPage({ id }: { id: string }) {
     <Page
       layout="detail"
       nav={withActive("/users")}
-      back={{ label: "Users", href: "/users" }}
+      // ADR 0024 §4: breadcrumb replaces `back` when 2+ items are available.
+      breadcrumb={[
+        { label: "Users", href: "/users" },
+        { label: user.name },
+      ]}
       meta={
-        <Card title="Details">
-          <List>
-            <ListItem>
-              <Strong>ID</Strong>: <CodeSpan>{user.id}</CodeSpan>
-            </ListItem>
-            <ListItem>
-              <Strong>Created</Strong>: {user.createdAt}
-            </ListItem>
-            <ListItem>
-              <Strong>Last seen</Strong>: {user.lastSeenAt}
-            </ListItem>
-            <ListItem>
-              <Strong>Invited by</Strong>: {user.invitedBy}
-            </ListItem>
-          </List>
-        </Card>
+        <Descriptions
+          title="Details"
+          items={[
+            { term: "ID", value: <CodeSpan>{user.id}</CodeSpan> },
+            { term: "Created", value: user.createdAt },
+            { term: "Last seen", value: user.lastSeenAt },
+            { term: "Invited by", value: user.invitedBy },
+          ]}
+        />
       }
       footer={
         // ADR 0019 §1 + ADR 0020 §2: 1-step preview entry; …suffix + danger variant.
@@ -220,19 +220,14 @@ export function UserDetailPage({ id }: { id: string }) {
         </Alert>
       ) : null}
 
-      <Card title="Profile">
-        <List>
-          <ListItem>
-            <Strong>Email</Strong>: {user.email}
-          </ListItem>
-          <ListItem>
-            <Strong>Role</Strong>: <CodeSpan>{user.role}</CodeSpan>
-          </ListItem>
-          <ListItem>
-            <Strong>Status</Strong>: <CodeSpan>{user.status}</CodeSpan>
-          </ListItem>
-        </List>
-      </Card>
+      <Descriptions
+        title="Profile"
+        items={[
+          { term: "Email", value: user.email },
+          { term: "Role", value: <CodeSpan>{user.role}</CodeSpan> },
+          { term: "Status", value: <CodeSpan>{user.status}</CodeSpan> },
+        ]}
+      />
 
       <Card title="Update role">
         {/* ADR 0016: Form input default value via directive default attribute */}

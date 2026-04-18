@@ -22,6 +22,7 @@ export {
   NavItemZ,
   NavScopeZ,
   NavZ,
+  BreadcrumbItemZ,
   EnvelopeError,
   parseEnvelope,
 } from "./envelope.js";
@@ -35,6 +36,7 @@ export type {
   NavItem,
   NavScope,
   Nav,
+  BreadcrumbItem,
 } from "./envelope.js";
 
 type DirectiveNode = ContainerDirective | LeafDirective | TextDirective;

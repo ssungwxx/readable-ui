@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { defineDualComponent } from "./index.js";
 import {
   serializeJsonlPayload,
+  type BreadcrumbItem as EnvelopeBreadcrumbItem,
   type MdNode,
   type Nav,
   type NavItem as EnvelopeNavItem,
@@ -41,6 +42,7 @@ function buildActionURI(
 }
 
 export type NavItem = EnvelopeNavItem;
+export type BreadcrumbItem = EnvelopeBreadcrumbItem;
 
 export interface DetailBackLink {
   label: string;
@@ -52,6 +54,8 @@ export interface PageProps {
   nav?: NavItem[];
   /** ADR 0021 §2: detail layout — back link rendered above the title */
   back?: DetailBackLink;
+  /** ADR 0024 §4: hierarchical path. When 2+ items are provided, suppresses `back`. */
+  breadcrumb?: BreadcrumbItem[];
   /** ADR 0021 §2: detail layout — right-side meta rail (HTML); flushed after main in Markdown */
   meta?: ReactNode;
   /** ADR 0021 §2: detail layout — bottom action area (HTML); flushed after meta in Markdown */
@@ -87,6 +91,42 @@ function renderBackLinkMarkdown(back: DetailBackLink): MdNode[] {
           ] as never,
         } as MdNode,
       ] as never,
+    } as MdNode,
+  ];
+}
+
+function resolveBreadcrumb(
+  propBc: BreadcrumbItem[] | undefined,
+  envBc: BreadcrumbItem[] | undefined
+): BreadcrumbItem[] | null {
+  // ADR 0024 §4: envelope 우선. 둘 다 있고 불일치는 warning 대상이나 v1 silent. items < 2 는 출력 생략.
+  const items = envBc && envBc.length > 0 ? envBc : propBc;
+  if (!items || items.length < 2) return null;
+  return items;
+}
+
+function renderBreadcrumbMarkdown(items: BreadcrumbItem[]): MdNode[] {
+  // ADR 0024 §4: nav 뒤 · back 앞 paragraph 한 줄. chevron `\u203A` + 공백.
+  // 각 항목: href 있으면 link, 없으면 plain text (현재 위치).
+  const children: MdNode[] = [];
+  items.forEach((item, idx) => {
+    if (idx > 0) {
+      children.push({ type: "text", value: " \u203A " } as MdNode);
+    }
+    if (item.href) {
+      children.push({
+        type: "link",
+        url: item.href,
+        children: [{ type: "text", value: item.label } as MdNode] as never,
+      } as MdNode);
+    } else {
+      children.push({ type: "text", value: item.label } as MdNode);
+    }
+  });
+  return [
+    {
+      type: "paragraph",
+      children: children as never,
     } as MdNode,
   ];
 }
@@ -151,9 +191,47 @@ function BrandMark() {
   );
 }
 
+function BreadcrumbHeader({ items }: { items: BreadcrumbItem[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="mb-4 text-sm">
+      <ol className="flex flex-wrap items-center gap-1.5 text-slate-500">
+        {items.map((item, idx) => {
+          const isLast = idx === items.length - 1;
+          const sep = idx > 0 ? (
+            <span key={`sep-${idx}`} aria-hidden="true" className="text-slate-300">
+              &rsaquo;
+            </span>
+          ) : null;
+          const content = item.href ? (
+            <a
+              href={item.href}
+              className="rounded px-1 font-medium text-slate-500 transition-colors hover:text-slate-900"
+            >
+              {item.label}
+            </a>
+          ) : (
+            <span aria-current={isLast ? "page" : undefined} className="px-1 font-medium text-slate-900">
+              {item.label}
+            </span>
+          );
+          return (
+            <li key={`bc-${idx}`} className="flex items-center gap-1.5">
+              {sep}
+              {content}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 export const Page = defineDualComponent<PageProps>({
   name: "page",
-  render: ({ layout = "flow", nav, back, meta, footer, children }) => {
+  render: ({ layout = "flow", nav, back, breadcrumb, meta, footer, children }) => {
+    // ADR 0024 §4: breadcrumb (>= 2 items) suppresses `back`. envelope override는 toMarkdown 경로에서.
+    const showBreadcrumb = breadcrumb && breadcrumb.length >= 2;
+    const effectiveBack = showBreadcrumb ? undefined : back;
     if (layout === "detail") {
       // ADR 0021 §2: 3-area shell — header(back+title slot) / body grid (main + meta) / footer.
       // children 의 첫 Heading level=1 은 자동으로 헤더 영역에 시각 분리되지 않음 — children flow 가
@@ -161,14 +239,15 @@ export const Page = defineDualComponent<PageProps>({
       return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
           <div className="mx-auto w-full max-w-5xl px-6 py-8">
-            {back ? (
+            {showBreadcrumb ? <BreadcrumbHeader items={breadcrumb!} /> : null}
+            {effectiveBack ? (
               <header className="mb-6">
                 <a
-                  href={back.href}
+                  href={effectiveBack.href}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
                 >
                   <span aria-hidden="true">&larr;</span>
-                  <span>Back to {back.label}</span>
+                  <span>Back to {effectiveBack.label}</span>
                 </a>
               </header>
             ) : null}
@@ -189,6 +268,14 @@ export const Page = defineDualComponent<PageProps>({
         </div>
       );
     }
+    const wrappedChildren = showBreadcrumb ? (
+      <>
+        <BreadcrumbHeader items={breadcrumb!} />
+        {children}
+      </>
+    ) : (
+      children
+    );
     if (layout === "sidebar" && nav && nav.length > 0) {
       return (
         <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -223,7 +310,7 @@ export const Page = defineDualComponent<PageProps>({
               <div className="mt-1 text-slate-500">Acme Admin</div>
             </div>
           </aside>
-          <main className="flex-1 px-10 py-10 space-y-6">{children}</main>
+          <main className="flex-1 px-10 py-10 space-y-6">{wrappedChildren}</main>
         </div>
       );
     }
@@ -258,31 +345,34 @@ export const Page = defineDualComponent<PageProps>({
             </div>
           </header>
           <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-6">
-            {children}
+            {wrappedChildren}
           </main>
         </div>
       );
     }
     return (
-      <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">{children}</main>
+      <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">{wrappedChildren}</main>
     );
   },
-  toMarkdown: ({ layout: propLayout, nav: propNav, back, meta, footer, children }, ctx) => {
-    // ADR 0021 §3: order = nav → back → main(children) → meta → footer.
+  toMarkdown: ({ layout: propLayout, nav: propNav, back, breadcrumb: propBc, meta, footer, children }, ctx) => {
+    // ADR 0021 §3 (+ ADR 0024 §4): order = nav → breadcrumb → back → main(children) → meta → footer.
     // ADR 0021 §6 / §2: back/meta/footer are detail-layout-only props. Guard the serializer
     // so that authors who pass them under flow/sidebar/topbar do not leak detail-shell
     // markup into unrelated layouts (silent ignore — symmetric with HTML render).
+    // ADR 0024 §4: breadcrumb (2+ items) works across all layouts and suppresses `back`.
     const effectiveLayout = ctx.envelope?.layout ?? propLayout ?? "flow";
     const isDetail = effectiveLayout === "detail";
     const main = ctx.walk(children);
     const metaNodes = isDetail && meta != null ? ctx.walk(meta) : [];
     const footerNodes = isDetail && footer != null ? ctx.walk(footer) : [];
-    const backNodes = isDetail && back ? renderBackLinkMarkdown(back) : [];
+    const bcItems = resolveBreadcrumb(propBc, ctx.envelope?.breadcrumb);
+    const bcNodes = bcItems ? renderBreadcrumbMarkdown(bcItems) : [];
+    const backNodes = isDetail && back && !bcItems ? renderBackLinkMarkdown(back) : [];
     const resolved = resolveNav(propNav, ctx.envelope?.nav);
     const navNodes = resolved
       ? renderNavMarkdown(resolved.items, resolved.scope)
       : [];
-    return [...navNodes, ...backNodes, ...main, ...metaNodes, ...footerNodes];
+    return [...navNodes, ...bcNodes, ...backNodes, ...main, ...metaNodes, ...footerNodes];
   },
 });
 
@@ -1544,3 +1634,199 @@ export function Table<R extends { id: string | number }>(props: TableProps<R>): 
 Table.spec = TableImpl.spec;
 (Table as unknown as { __readable: true }).__readable = true;
 Table.displayName = "table";
+
+// ============================================================================
+// ADR 0024 — Admin metric·progress·descriptions·breadcrumb components
+// ============================================================================
+
+export interface StatProps {
+  label: string;
+  value: string;
+  delta?: string;
+  trend?: "up" | "down" | "flat";
+  unit?: string;
+}
+export const Stat = defineDualComponent<StatProps>({
+  name: "stat",
+  render: ({ label, value, delta, trend, unit }) => {
+    const trendColor =
+      trend === "up"
+        ? "text-emerald-600 bg-emerald-50"
+        : trend === "down"
+          ? "text-red-600 bg-red-50"
+          : trend === "flat"
+            ? "text-slate-500 bg-slate-100"
+            : "text-slate-500 bg-slate-50";
+    const trendGlyph =
+      trend === "up" ? "\u25B2" : trend === "down" ? "\u25BC" : trend === "flat" ? "\u2014" : null;
+    return (
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.12)]">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent"
+        />
+        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+          {label}
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <div className="text-3xl font-bold tracking-tight text-slate-900">{value}</div>
+          {unit ? <div className="text-xs text-slate-400">{unit}</div> : null}
+        </div>
+        {delta || trendGlyph ? (
+          <div className="mt-2 inline-flex items-center gap-1 text-xs">
+            {trendGlyph ? (
+              <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${trendColor}`}>
+                {trendGlyph}
+              </span>
+            ) : null}
+            {delta ? (
+              <span className={trend === "up" ? "text-emerald-700" : trend === "down" ? "text-red-700" : "text-slate-600"}>
+                {delta}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    );
+  },
+  toMarkdown: ({ label, value, delta, trend, unit }, ctx) => {
+    // ADR 0024 §1: leaf directive with value in the body + fallback paragraph.
+    const attrs: Record<string, string> = { label };
+    if (delta) attrs.delta = delta;
+    if (trend) attrs.trend = trend;
+    if (unit) attrs.unit = unit;
+    const directive: MdNode = {
+      type: "leafDirective",
+      name: "stat",
+      attributes: attrs,
+      children: [{ type: "text", value } as MdNode] as never,
+    };
+    // Fallback paragraph: "**value** · delta (label)" (delta optional; unit replaces parens content when present).
+    const parensText = unit ? unit : label;
+    const paraChildren: MdNode[] = [
+      { type: "strong", children: [{ type: "text", value } as MdNode] as never } as MdNode,
+    ];
+    if (delta) {
+      paraChildren.push({ type: "text", value: ` \u00B7 ${delta}` } as MdNode);
+    }
+    paraChildren.push({ type: "text", value: ` (${parensText})` } as MdNode);
+    const fallbackPara: MdNode = {
+      type: "paragraph",
+      children: paraChildren as never,
+    };
+    if (ctx.fallback === "off") return directive;
+    if (ctx.fallback === "link-only") return fallbackPara;
+    return [directive, fallbackPara];
+  },
+});
+
+export interface ProgressProps {
+  value: number;
+  max?: number;
+  label?: string;
+  variant?: "primary" | "success" | "warning" | "danger";
+}
+export const Progress = defineDualComponent<ProgressProps>({
+  name: "progress",
+  render: ({ value, max = 100, label, variant = "primary" }) => {
+    const clamped = Math.max(0, Math.min(value, max));
+    const pct = max > 0 ? (clamped / max) * 100 : 0;
+    const barColor =
+      variant === "success"
+        ? "from-emerald-400 to-emerald-500"
+        : variant === "warning"
+          ? "from-amber-400 to-amber-500"
+          : variant === "danger"
+            ? "from-red-400 to-red-500"
+            : "from-blue-400 to-blue-500";
+    const labelColor =
+      variant === "success"
+        ? "text-emerald-700"
+        : variant === "warning"
+          ? "text-amber-700"
+          : variant === "danger"
+            ? "text-red-700"
+            : "text-slate-700";
+    return (
+      <div className="space-y-1.5">
+        {label ? (
+          <div className="flex items-baseline justify-between text-xs">
+            <span className={`font-medium ${labelColor}`}>{label}</span>
+            <span className="tabular-nums text-slate-500">
+              {value} / {max}
+            </span>
+          </div>
+        ) : null}
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-slate-100"
+          role="progressbar"
+          aria-valuenow={value}
+          aria-valuemin={0}
+          aria-valuemax={max}
+        >
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-[width] duration-300`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+    );
+  },
+  toMarkdown: ({ value, max = 100, label, variant }, ctx) => {
+    const attrs: Record<string, string> = {
+      value: String(value),
+      max: String(max),
+    };
+    if (label) attrs.label = label;
+    if (variant && variant !== "primary") attrs.variant = variant;
+    const directive: MdNode = {
+      type: "leafDirective",
+      name: "progress",
+      attributes: attrs,
+      children: [] as never,
+    };
+    // Fallback paragraph: "<value> / <max> (<percent>%) — <label>"
+    const pct = max > 0 ? Math.round((Math.max(0, Math.min(value, max)) / max) * 100) : 0;
+    const base = `${value} / ${max} (${pct}%)`;
+    const text = label ? `${base} \u2014 ${label}` : base;
+    const fallbackPara: MdNode = {
+      type: "paragraph",
+      children: [{ type: "text", value: text } as MdNode] as never,
+    };
+    if (ctx.fallback === "off") return directive;
+    if (ctx.fallback === "link-only") return fallbackPara;
+    return [directive, fallbackPara];
+  },
+});
+
+// ADR 0024 §3: Descriptions — JSX convenience wrapper around the ADR 0018 Card+List idiom.
+// Not registered as a dual component; renders as Card > List > ListItem > Strong + value
+// so Markdown output matches ADR 0018 정규형 verbatim and no new directive name is added.
+// HTML render inherits Card styling — the visual 2-column grid variant is v2.
+export interface DescriptionsItem {
+  term: string;
+  value: ReactNode;
+}
+export interface DescriptionsProps {
+  title?: string;
+  items: DescriptionsItem[];
+}
+
+export function Descriptions({ title, items }: DescriptionsProps): ReactNode {
+  return (
+    <Card {...(title !== undefined ? { title } : {})}>
+      <List>
+        {items.map((item, idx) => {
+          const empty = item.value == null || item.value === "" || item.value === false;
+          return (
+            <ListItem key={`${item.term}-${idx}`}>
+              <Strong>{item.term}</Strong>
+              {": "}
+              {empty ? <Emphasis>none</Emphasis> : item.value}
+            </ListItem>
+          );
+        })}
+      </List>
+    </Card>
+  );
+}

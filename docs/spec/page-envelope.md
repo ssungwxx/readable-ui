@@ -2,7 +2,7 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md), [ADR 0021](../adr/0021-detail-page-layout.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md)
 
 ## 구조
 
@@ -78,6 +78,23 @@ nav:
 - `scope: "section"` — 현재 섹션 내부 서브 nav. Markdown heading 텍스트가 `## Section navigation` 으로 분기.
 - envelope `nav` 와 Page prop `nav` 가 둘 다 주어지고 서로 다르면 warning. envelope 우선.
 
+#### `breadcrumb` (optional, BreadcrumbItem[]) — ADR 0024 §4
+
+계층 경로. 선언되면 `<Page>` 쉘이 nav 뒤 · back 앞에 한 줄 paragraph 로 flush 한다.
+
+```yaml
+breadcrumb:
+  - { label: Users, href: /users }
+  - { label: "Alice Example", href: /users/u_alice_01 }
+  - { label: Billing }     # 현재 위치 — href 생략
+```
+
+- 각 항목: `label` required, `href` optional. `href` 미선언 = 현재 위치 (plain text 렌더). 마지막 외 위치에서 생략은 warning 대상.
+- 항목 2개 이상일 때만 출력 — 단일 항목이거나 미선언이면 무음 skip.
+- envelope `breadcrumb` 와 Page prop `breadcrumb` 공존 시 envelope 우선 (nav 규약과 동형).
+- breadcrumb (2+ items) 가 선언된 페이지에서 `back` prop 은 자동 무음 생략 — 두 링크 의미 중복 억제.
+- Markdown 구분자: ` › ` (U+203A, 영어 single-source 고정).
+
 #### `layout` (optional, enum)
 
 허용되는 레이아웃 식별자. 기본값 `flow`.
@@ -91,7 +108,7 @@ nav:
 
 `sidebar`/`topbar` 선택 시 `<Page>` 에 `nav` prop으로 `{label, href, active?}[]` 전달. 좌/위 차이는 시각 전용이며 Markdown 직렬화는 동일 — body 맨 앞에 `## Navigation` + unordered 링크 리스트로 flush한다. 배치 정보는 버리지만 정보 손실은 없다 (ADR 0007 §4 flush 원칙). 상세는 [component-catalog.md §Page](./component-catalog.md#page).
 
-`detail` 선택 시 `<Page>` 에 추가 prop `back?: { label, href }` · `meta?: ReactNode` · `footer?: ReactNode` 를 사용한다. Markdown 직렬화 순서는 `nav → back → main(children) → meta → footer` 단일 세로 flush — 우측 rail 의 시각 배치 정보는 버리지만 정보 손실은 없다. 본문 정규형은 ADR 0018 단건 상세 관용구 (Card + List + Strong) 와 ADR 0019 destructive 2단계 confirm 페이지 (Card + Alert + Form) 양쪽이 detail layout 위에 얹힌다.
+`detail` 선택 시 `<Page>` 에 추가 prop `back?: { label, href }` · `meta?: ReactNode` · `footer?: ReactNode` 를 사용한다. Markdown 직렬화 순서는 `nav → breadcrumb → back → main(children) → meta → footer` 단일 세로 flush (ADR 0021 + ADR 0024 §4) — 우측 rail 의 시각 배치 정보는 버리지만 정보 손실은 없다. 본문 정규형은 ADR 0018 단건 상세 관용구 (Card + List + Strong) 와 ADR 0019 destructive 2단계 confirm 페이지 (Card + Alert + Form) 양쪽이 detail layout 위에 얹힌다. 중첩 리소스 경로 (예: `/users/[id]/billing`) 는 `back` 대신 `breadcrumb` 을 선언 — 2+ items breadcrumb 가 있으면 `back` 은 무음 생략된다.
 
 envelope `layout` 과 `<Page layout>` prop은 일치시키는 것이 권장. 불일치 시 warning.
 

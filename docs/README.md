@@ -45,6 +45,7 @@
 - [0021 — Detail page layout (단건 상세 화면 쉘)](./adr/0021-detail-page-layout.md)
 - [0022 — 데이터 헤비 Table 의 fenced payload 분리 (`readable-ui:data` JSONL)](./adr/0022-table-payload-fenced.md)
 - [0023 — Benchmark environment (readable-ui · ax-tree · headful-md 3중 비교)](./adr/0023-benchmark-environment.md)
+- [0024 — Admin metric·progress·descriptions·breadcrumb 관용구](./adr/0024-admin-metric-and-hierarchy-components.md)
 
 ## Open Decisions
 

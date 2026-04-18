@@ -72,6 +72,13 @@ export const NavZ = z.object({
 });
 export type Nav = z.infer<typeof NavZ>;
 
+/** ADR 0024 §4: breadcrumb item — `href` omission marks the current position. */
+export const BreadcrumbItemZ = z.object({
+  label: z.string().min(1),
+  href: z.string().min(1).optional(),
+});
+export type BreadcrumbItem = z.infer<typeof BreadcrumbItemZ>;
+
 export const EnvelopeZ = z
   .object({
     title: z.string().min(1),
@@ -83,6 +90,9 @@ export const EnvelopeZ = z
     intent: z.enum(["destructive-confirm"]).optional(),
     layout: PageLayoutZ.optional(),
     nav: NavZ.optional(),
+    /** ADR 0024 §4: hierarchical path. 2+ items render as a breadcrumb paragraph ahead of
+     * main body. Coexists with `<Page back>` but breadcrumb wins (back suppressed). */
+    breadcrumb: z.array(BreadcrumbItemZ).optional(),
     paths: PathsZ.optional(),
     constraints: z.array(ConstraintZ).optional(),
     pagination: PaginationZ.optional(),
