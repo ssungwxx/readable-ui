@@ -85,6 +85,7 @@ interface BenchScenario {
 4. **timing 기준**: `renderTimeMs` 는 "입력 → output string" 단계만 측정한다. 즉 ax-tree 런너는 `Accessibility.getFullAXTree` CDP 호출부터 tree 복원 + `JSON.stringify` 완료까지, headful-md 는 위 복원 tree 를 받은 시점부터 Markdown 문자열 반환까지, readable-ui 는 HTTP fetch 부터 body 수신 완료까지. 네트워크·브라우저 부팅 + CDP 세션 attach 시간은 bench 외부 (warm-up 1회 실행 후 본 측정).
 5. **warm-up**: 각 시나리오를 2회 실행하고 첫 회는 폐기한다 (Node JIT + Next RSC 캐시 워밍). 본 측정은 2회차.
 6. **randomness 금지**: `apps/example` fixture 는 deterministic (audit 의 240 rows 도 `makeAuditEvents(240)` 결정적). 날짜·ID 등은 fixture 레벨에서 고정.
+7. **ax-tree volatile identifier 정규화** (ADR 0023 amendment 2026-04-18): CDP 가 Chrome 재시작마다 재발급하는 `nodeId` / `parentId` / `childIds[]` / `backendDOMNodeId` / `frameId` 는 `bench/src/lib/ax-cache.ts` 의 `normalizeVolatileIds()` 가 **한 run 내 first-seen DFS 순서**로 안정 placeholder (`<id-N>` / `<backend-N>` / `<frame-N>`) 로 치환된다. 같은 노드가 여러 필드에서 참조될 때 **동일 placeholder** 로 일관. 정규화는 AX 노드 최상위 필드뿐 아니라 `name.sources[].nativeSourceValue.relatedNodes[].backendDOMNodeId`, `properties[].value.relatedNodes[].backendDOMNodeId` 같은 **nested CDP back-reference** 도 포함해 JSON 구조 전체를 deep-walk 한다. 토큰·바이트·문자 산정은 **정규화된 출력 문자열** 을 입력으로 받으며, 따라서 같은 git sha · 같은 페이지 상태에서는 ax-tree 산출이 byte-equal 하다. `headful-md` 는 캐시된 원본 tree (비정규화) 를 입력으로 사용하므로 nodeId-keyed resolver 계약 (`ax-to-md.ts` hrefResolver) 이 유지된다.
 
 ## 5. headful(ax→md) 변환 규칙 (휴리스틱 v1)
 

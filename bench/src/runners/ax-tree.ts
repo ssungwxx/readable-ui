@@ -16,6 +16,7 @@ import {
 import type { BenchScenario, Runner, RunnerResult } from "../types.js";
 import {
   buildAxTree,
+  normalizeVolatileIds,
   type AxNode,
   type PageAxSnapshotCache,
 } from "../lib/ax-cache.js";
@@ -88,7 +89,13 @@ export default class AxTreeRunner implements Runner {
       nodes: AxNode[];
     };
     const root = buildAxTree(nodes);
-    const output = JSON.stringify(root ?? null, null, 0);
+    // Normalize volatile CDP identifiers (nodeId/parentId/childIds/backendDOMNodeId/frameId)
+    // so the serialized snapshot is byte-equal across Chrome restarts for the
+    // same page (ADR 0023 amendment 2026-04-18, spec §4.7). The cached tree
+    // retains the original identifiers because headful-md's hrefResolver
+    // (ax-to-md.ts) is keyed on the raw nodeId.
+    const normalizedRoot = normalizeVolatileIds(root);
+    const output = JSON.stringify(normalizedRoot ?? null, null, 0);
     const t1 = performance.now();
     const snapshotMs = t1 - t0;
 

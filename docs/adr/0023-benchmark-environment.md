@@ -144,3 +144,37 @@ CI 에서 자동 실행하지 않는다. 근거:
 - **Agent 성공률 연계** — 토큰 밀도와 agent 성공률의 상관관계 측정. 별도 eval harness 에서 bench scenario 세트를 재사용하되 평가 축이 다름.
 - **readable-ui 가 envelope 미보유 홈을 표현할 방법** — 현재 `null` 로 처리. 본 ADR 범위 밖이나 bench 결과 해석에 반복 언급될 가능성.
 - **Playwright 가 ax-tree public API 를 재도입하면 CDP → 공식 API 재전환** — v1.51 에서 `page.accessibility.snapshot` 이 제거돼 현재는 CDP `Accessibility.getFullAXTree` 로 우회. 향후 상위 레벨 API 가 복귀하면 CDP 의존 제거 + bench 출력 diff 회귀 검증 필요 (flat node list → tree 복원 단계가 사라지면 직렬화 결과가 미세하게 달라질 수 있음).
+
+## Amendment — 2026-04-18 (ax-tree 스냅샷 결정론)
+
+### Context (재방문)
+
+bench baseline 재실행에서 `bench/results/baseline/outputs/*.ax-tree.txt` 7/7 파일이 byte-level diff 로 잡혔다. 원인은 Chrome CDP 가 세션·run 단위로 **volatile** 한 `nodeId` / `parentId` / `childIds[]` / `backendDOMNodeId` / `frameId` 를 재발급하기 때문으로, 동일 페이지·동일 git sha·동일 fixture 에서도 raw 직렬화는 byte-equal 일 수 없다. 토큰 drift 는 관측상 0.02–0.05% 여서 fairness 영향은 미미하나, "baseline diff 가 regression 신호인가 CDP noise 인가" 를 구분할 수 없어 이후 회귀 탐지에 작동하지 않는다.
+
+### Decision (추가)
+
+ax-tree 런너는 `Accessibility.getFullAXTree` 응답을 트리 복원한 뒤, JSON 직렬화 **직전** 에 위 5개 volatile 식별자 필드를 한 run 내 first-seen DFS 순서로 안정 placeholder 로 치환한다:
+
+- `nodeId` / `parentId` / `childIds[]` → 공유 네임스페이스, `<id-1>`, `<id-2>`, …. 같은 raw id 는 어느 필드에서 나오든 같은 placeholder.
+- `backendDOMNodeId` → `<backend-N>` (nodeId 와 다른 네임스페이스, 원본 타입이 number 라 충돌 회피).
+- `frameId` → `<frame-N>` (페이지당 1–2 개).
+
+치환은 트리 깊은 복제 위에서 수행되며, AX 노드 최상위 필드뿐 아니라 `name.sources[].nativeSourceValue.relatedNodes[].backendDOMNodeId`·`properties[].value.relatedNodes[].backendDOMNodeId` 같은 **nested CDP back-reference** 도 같은 placeholder 로 포함한다 (`bench/src/lib/ax-cache.ts`의 `normalizeVolatileIds()`, two-pass: pass 1 에서 DFS 로 nodeId 순번을 고정하고 pass 2 에서 JSON deep-walk 로 모든 위치의 volatile 필드를 치환). 캐시에 저장되는 원본 트리는 **정규화 전** 을 유지 — `headful-md` 러너가 `hrefResolver(node.nodeId)` 로 원본 nodeId 를 소비하기 때문 (`bench/src/lib/ax-to-md.ts`). 현재 ax-tree 런너의 `hrefResolver` 기본값은 `() => undefined` 라 링크 추출이 활성화돼 있지 않지만, 차후 활성화되더라도 두 런너 간 contract 불일치가 생기지 않도록 분리한다.
+
+### Fairness 산정 기준 재확인
+
+토큰·바이트·문자 메트릭 (spec §3) 의 **입력 문자열**은 이제 정규화된 JSON 출력이다. 즉:
+
+- `ax-tree` 의 `tokens`·`bytes`·`chars` 는 normalized output 기준.
+- `readable-ui` / `headful-md` 은 변경 없음 — 각자의 원래 파이프라인 그대로.
+- `actionableElementCount` (spec §3.1) 는 tree 구조/role 만 검사하므로 정규화 여부와 무관.
+
+정규화된 placeholder 문자열 (`"<id-42>"` 5 tokens) 은 raw CDP 숫자 문자열 (`"3447"` 4 tokens) 보다 **노드당 약 1 토큰** 길다. 측정된 7 시나리오 기준 ax-tree 토큰이 baseline (volatile id 그대로) 대비 **+6.8% ~ +11.7%** 증가 — `dashboard` (+10.7%) 와 `home` (+11.7%) 두 시나리오가 fairness 임계값 ±10% (spec §4) 를 근소하게 초과. 이 편차는 **일회성 metric shift** 로 베이스라인을 재고정하면 흡수되며, 이후 run-to-run 은 byte-equal 이라 진짜 regression 과 구분된다. readable-ui / headful-md 는 영향 없음 (0% drift 확인). sizeRatio 의 구조적 해석 (`readable-ui ↔ ax-tree ↔ headful-md` 계층 순서) 은 불변 — ax-tree 가 여전히 readable-ui 대비 20x+ 배 토큰을 사용.
+
+### Consequences (추가)
+
+- **byte-equal 보장**: 같은 git sha + 같은 Node + 같은 Chromium 버전에서 `pnpm bench` 를 두 번 돌리면 `outputs/*.ax-tree.txt` 7 파일 모두 byte-equal 이 된다 (`summary.md` 메타 블록 기준 deterministic 확인 절차가 `bytes/chars/tokens` 뿐 아니라 **파일 diff** 로도 가능).
+- baseline 갱신 시 diff 판독이 가능해져 regression 탐지가 실질적 기능.
+- Chromium 메이저 업그레이드로 CDP 가 AX tree 의 **구조** (새 필드 등장, 노드 카운트 변화) 를 바꿀 경우에는 여전히 diff 가 발생 — 이는 환경 변화가 실제 측정에 영향을 준 것이므로 baseline 갱신 신호로 기능.
+- `headful-md` 경로 계약 (`nodeId`-keyed resolver) 은 영향받지 않음.
+- 정규화 로직 자체가 드리프트 원인이 될 여지 (placeholder 포맷 변경 등) 가 생김. 향후 placeholder 포맷을 변경하려면 본 Amendment 를 재개정하고 같은 PR 에서 baseline 을 함께 갱신한다.
