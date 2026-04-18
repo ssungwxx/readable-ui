@@ -208,6 +208,7 @@ const DEFAULT_CONVENTIONS: Record<string, string> = {
   "duplicate-button-link": "dual-render",
   "form-inner-button-action": "inherit",
   "uri-query-encoding": "percent-decoded-match",
+  "form-default-ssot": "directive",
 };
 
 function withDefaultConventions(env: Envelope): Envelope {

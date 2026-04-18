@@ -98,14 +98,39 @@ function renderNavMarkdown(nav: NavItem[], scope: "global" | "section"): MdNode[
   return [heading, list];
 }
 
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1">
+      <span
+        aria-hidden="true"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 text-white shadow-sm ring-1 ring-black/5"
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 6h10" />
+          <path d="M4 12h16" />
+          <path d="M4 18h7" />
+        </svg>
+      </span>
+      <span className="text-sm font-semibold tracking-tight text-gray-900">
+        readable
+        <span className="text-gray-400">/</span>
+        ui
+      </span>
+    </div>
+  );
+}
+
 export const Page = defineDualComponent<PageProps>({
   name: "page",
   render: ({ layout = "flow", nav, children }) => {
     if (layout === "sidebar" && nav && nav.length > 0) {
       return (
-        <div className="flex min-h-screen">
-          <aside className="w-60 shrink-0 border-r border-gray-200 bg-gray-50 px-4 py-6">
-            <nav className="flex flex-col gap-1 text-sm">
+        <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+          <aside className="w-64 shrink-0 border-r border-slate-200/70 bg-white/70 backdrop-blur px-4 py-6">
+            <div className="mb-4">
+              <BrandMark />
+            </div>
+            <nav className="flex flex-col gap-0.5 text-sm">
               {nav.map((item) => (
                 <a
                   key={item.href}
@@ -113,39 +138,58 @@ export const Page = defineDualComponent<PageProps>({
                   aria-current={item.active ? "page" : undefined}
                   className={
                     item.active
-                      ? "rounded px-3 py-2 font-medium bg-blue-50 text-blue-700"
-                      : "rounded px-3 py-2 text-gray-700 hover:bg-gray-100"
+                      ? "group relative rounded-lg px-3 py-2 font-medium text-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 ring-1 ring-blue-100"
+                      : "group rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                   }
                 >
+                  {item.active ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-blue-500"
+                    />
+                  ) : null}
                   {item.label}
                 </a>
               ))}
             </nav>
+            <div className="mt-8 border-t border-slate-200/70 pt-4 text-[11px] text-slate-400">
+              <div className="uppercase tracking-widest">Workspace</div>
+              <div className="mt-1 text-slate-500">Acme Admin</div>
+            </div>
           </aside>
-          <main className="flex-1 px-8 py-10 space-y-6">{children}</main>
+          <main className="flex-1 px-10 py-10 space-y-6">{children}</main>
         </div>
       );
     }
     if (layout === "topbar" && nav && nav.length > 0) {
       return (
-        <div className="flex min-h-screen flex-col">
-          <header className="border-b border-gray-200 bg-white">
-            <nav className="mx-auto flex max-w-6xl gap-1 px-6 py-3 text-sm">
-              {nav.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  aria-current={item.active ? "page" : undefined}
-                  className={
-                    item.active
-                      ? "rounded px-3 py-2 font-medium bg-blue-50 text-blue-700"
-                      : "rounded px-3 py-2 text-gray-700 hover:bg-gray-100"
-                  }
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
+        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
+          <header className="sticky top-0 z-10 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+            <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3">
+              <BrandMark />
+              <nav className="flex items-center gap-0.5 text-sm">
+                {nav.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    aria-current={item.active ? "page" : undefined}
+                    className={
+                      item.active
+                        ? "rounded-md px-3 py-1.5 font-medium text-blue-700 bg-blue-50 ring-1 ring-blue-100"
+                        : "rounded-md px-3 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                    }
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+              <div className="ml-auto text-xs text-slate-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  All systems operational
+                </span>
+              </div>
+            </div>
           </header>
           <main className="mx-auto w-full max-w-6xl px-6 py-10 space-y-6">
             {children}
@@ -172,13 +216,26 @@ export interface HeadingProps {
 export const Heading = defineDualComponent<HeadingProps>({
   name: "heading",
   render: ({ level, children }) => {
-    const cls =
-      level === 1
-        ? "text-3xl font-bold tracking-tight"
-        : level === 2
-          ? "text-2xl font-semibold tracking-tight"
-          : "text-xl font-semibold";
-    const Tag = `h${level}` as "h1";
+    if (level === 1) {
+      return (
+        <h1 className="relative text-3xl font-bold tracking-tight text-slate-900">
+          <span
+            aria-hidden="true"
+            className="absolute -left-4 top-1.5 h-7 w-1 rounded-full bg-gradient-to-b from-indigo-500 via-blue-500 to-cyan-400"
+          />
+          {children}
+        </h1>
+      );
+    }
+    if (level === 2) {
+      return (
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+          {children}
+        </h2>
+      );
+    }
+    const cls = "text-xl font-semibold text-slate-900";
+    const Tag = `h${level}` as "h3";
     return <Tag className={cls}>{children}</Tag>;
   },
   toMarkdown: ({ level, children }, ctx) => ({
@@ -193,11 +250,47 @@ export interface ParagraphProps {
 }
 export const Paragraph = defineDualComponent<ParagraphProps>({
   name: "paragraph",
-  render: ({ children }) => <p className="leading-7 text-gray-800">{children}</p>,
+  render: ({ children }) => (
+    <p className="leading-7 text-slate-700">{children}</p>
+  ),
   toMarkdown: ({ children }, ctx) => ({
     type: "paragraph",
     children: inlineFromChildren(children, ctx) as never,
   }),
+});
+
+export interface StrongProps { children: ReactNode; }
+export const Strong = defineDualComponent<StrongProps>({
+  name: "strong",
+  render: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+  toMarkdown: ({ children }, ctx) => ({
+    type: "strong",
+    children: inlineFromChildren(children, ctx) as never,
+  }),
+});
+
+export interface EmphasisProps { children: ReactNode; }
+export const Emphasis = defineDualComponent<EmphasisProps>({
+  name: "emphasis",
+  render: ({ children }) => <em className="italic text-slate-700">{children}</em>,
+  toMarkdown: ({ children }, ctx) => ({
+    type: "emphasis",
+    children: inlineFromChildren(children, ctx) as never,
+  }),
+});
+
+export interface CodeSpanProps { children: ReactNode; }
+export const CodeSpan = defineDualComponent<CodeSpanProps>({
+  name: "code-span",
+  render: ({ children }) => (
+    <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em] text-slate-800">
+      {asText(children)}
+    </code>
+  ),
+  toMarkdown: ({ children }) => ({
+    type: "inlineCode",
+    value: asText(children),
+  } as MdNode),
 });
 
 export interface LinkProps {
@@ -207,7 +300,10 @@ export interface LinkProps {
 export const Link = defineDualComponent<LinkProps>({
   name: "link",
   render: ({ href, children }) => (
-    <a href={href} className="text-blue-600 underline hover:no-underline">
+    <a
+      href={href}
+      className="font-medium text-blue-600 underline decoration-blue-300 decoration-2 underline-offset-4 transition-colors hover:text-blue-800 hover:decoration-blue-500"
+    >
       {children}
     </a>
   ),
@@ -218,6 +314,23 @@ export const Link = defineDualComponent<LinkProps>({
   }),
 });
 
+export interface ImageProps { src: string; alt: string; }
+export const Image = defineDualComponent<ImageProps>({
+  name: "image",
+  render: ({ src, alt }) => <img src={src} alt={alt} className="max-w-full rounded-lg" />,
+  toMarkdown: ({ src, alt }) => ({
+    type: "image",
+    url: src,
+    alt,
+  } as MdNode),
+});
+
+export const Divider = defineDualComponent<{}>({
+  name: "divider",
+  render: () => <hr className="my-6 border-t border-slate-200/70" />,
+  toMarkdown: () => ({ type: "thematicBreak" } as MdNode),
+});
+
 export interface ListProps {
   ordered?: boolean;
   children: ReactNode;
@@ -226,7 +339,9 @@ export const List = defineDualComponent<ListProps>({
   name: "list",
   render: ({ ordered, children }) => {
     const Tag = ordered ? "ol" : "ul";
-    const cls = ordered ? "list-decimal pl-6 space-y-1" : "list-disc pl-6 space-y-1";
+    const cls = ordered
+      ? "list-decimal pl-6 space-y-1 text-slate-700 marker:text-slate-400"
+      : "list-disc pl-6 space-y-1 text-slate-700 marker:text-blue-400";
     return <Tag className={cls}>{children}</Tag>;
   },
   toMarkdown: ({ ordered, children }, ctx) => {
@@ -245,7 +360,7 @@ export interface ListItemProps {
 }
 export const ListItem = defineDualComponent<ListItemProps>({
   name: "list-item",
-  render: ({ children }) => <li>{children}</li>,
+  render: ({ children }) => <li className="pl-1">{children}</li>,
   toMarkdown: ({ children }, ctx) => ({
     type: "listItem",
     spread: false,
@@ -265,9 +380,23 @@ export interface CardProps {
 export const Card = defineDualComponent<CardProps>({
   name: "card",
   render: ({ title, children }) => (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-3">
-      {title ? <h3 className="text-lg font-semibold">{title}</h3> : null}
-      {children}
+    <section className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.12)] transition-shadow hover:shadow-[0_1px_2px_0_rgba(15,23,42,0.05),0_16px_40px_-20px_rgba(15,23,42,0.18)]">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent"
+      />
+      {title ? (
+        <header className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+            {title}
+          </h3>
+          <span
+            aria-hidden="true"
+            className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500"
+          />
+        </header>
+      ) : null}
+      <div className="space-y-3">{children}</div>
     </section>
   ),
   toMarkdown: ({ title, children }, ctx) => ({
@@ -286,13 +415,14 @@ export interface ButtonProps {
 export const Button = defineDualComponent<ButtonProps>({
   name: "button",
   render: ({ action, variant = "primary", children }) => {
-    const base = "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium";
+    const base =
+      "inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:translate-y-px";
     const color =
       variant === "primary"
-        ? "bg-blue-600 text-white hover:bg-blue-700"
+        ? "bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-sm ring-1 ring-inset ring-blue-700/10 hover:from-blue-500 hover:to-blue-700 focus-visible:ring-blue-500"
         : variant === "danger"
-          ? "bg-red-600 text-white hover:bg-red-700"
-          : "bg-gray-200 text-gray-900 hover:bg-gray-300";
+          ? "bg-gradient-to-b from-red-500 to-red-600 text-white shadow-sm ring-1 ring-inset ring-red-700/10 hover:from-red-500 hover:to-red-700 focus-visible:ring-red-500"
+          : "bg-white text-slate-800 shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 focus-visible:ring-slate-400";
     return (
       <button type="submit" data-action={action} className={`${base} ${color}`}>
         {children}
@@ -354,8 +484,12 @@ export const Form = defineDualComponent<FormProps>({
     <form
       action={`/api/tool/${action}`}
       method="post"
-      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-3"
+      className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4"
     >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-400 via-blue-400 to-cyan-400"
+      />
       {children}
     </form>
   ),
@@ -383,15 +517,18 @@ export interface InputProps {
   max?: number | string;
   step?: number | string;
   format?: string;
+  defaultValue?: string | number;
 }
 export const Input = defineDualComponent<InputProps>({
   name: "input",
-  render: ({ name, type = "text", label, required, placeholder, pattern, minLength, maxLength, min, max, step }) => (
-    <label className="flex flex-col gap-1 text-sm">
+  render: ({ name, type = "text", label, required, placeholder, pattern, minLength, maxLength, min, max, step, defaultValue }) => (
+    <label className="flex flex-col gap-1.5 text-sm">
       {label ? (
-        <span className="text-gray-700">
+        <span className="font-medium text-slate-700">
           {label}
-          {required ? <span className="text-red-600"> *</span> : null}
+          {required ? (
+            <span className="ml-0.5 text-red-500" aria-label="required">*</span>
+          ) : null}
         </span>
       ) : null}
       <input
@@ -405,11 +542,12 @@ export const Input = defineDualComponent<InputProps>({
         min={min}
         max={max}
         step={step}
-        className="rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+        defaultValue={defaultValue}
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 shadow-sm transition-shadow focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       />
     </label>
   ),
-  toMarkdown: ({ name, type, label, required, placeholder, pattern, minLength, maxLength, min, max, step, format }) => {
+  toMarkdown: ({ name, type, label, required, placeholder, pattern, minLength, maxLength, min, max, step, format, defaultValue }) => {
     const attrs: Record<string, string> = { name };
     if (type && type !== "text") attrs.type = type;
     if (label) attrs.label = label;
@@ -421,6 +559,7 @@ export const Input = defineDualComponent<InputProps>({
     if (max != null) attrs.max = String(max);
     if (step != null) attrs.step = String(step);
     if (format) attrs.format = format;
+    if (defaultValue != null && defaultValue !== "") attrs.default = String(defaultValue);
     if (required) attrs.required = "";
     return {
       type: "leafDirective",
@@ -437,22 +576,26 @@ export interface SelectProps {
   label?: string;
   required?: boolean;
   multiple?: boolean;
+  defaultValue?: string | string[];
 }
 export const Select = defineDualComponent<SelectProps>({
   name: "select",
-  render: ({ name, options, label, required, multiple }) => (
-    <label className="flex flex-col gap-1 text-sm">
+  render: ({ name, options, label, required, multiple, defaultValue }) => (
+    <label className="flex flex-col gap-1.5 text-sm">
       {label ? (
-        <span className="text-gray-700">
+        <span className="font-medium text-slate-700">
           {label}
-          {required ? <span className="text-red-600"> *</span> : null}
+          {required ? (
+            <span className="ml-0.5 text-red-500" aria-label="required">*</span>
+          ) : null}
         </span>
       ) : null}
       <select
         name={name}
         required={required}
         multiple={multiple}
-        className="rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+        defaultValue={defaultValue}
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm transition-shadow focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       >
         <option value="">Select…</option>
         {options.map((v) => (
@@ -463,13 +606,20 @@ export const Select = defineDualComponent<SelectProps>({
       </select>
     </label>
   ),
-  toMarkdown: ({ name, options, label, required, multiple }) => {
+  toMarkdown: ({ name, options, label, required, multiple, defaultValue }) => {
     const attrs: Record<string, string> = {
       name,
       options: options.join(","),
     };
     if (label) attrs.label = label;
     if (multiple) attrs.multiple = "";
+    if (defaultValue != null) {
+      if (Array.isArray(defaultValue)) {
+        if (defaultValue.length > 0) attrs.default = defaultValue.join(",");
+      } else if (defaultValue !== "") {
+        attrs.default = defaultValue;
+      }
+    }
     if (required) attrs.required = "";
     return {
       type: "leafDirective",
@@ -480,6 +630,180 @@ export const Select = defineDualComponent<SelectProps>({
   },
 });
 
+export interface TextareaProps {
+  name: string;
+  label?: string;
+  required?: boolean;
+  placeholder?: string;
+  rows?: number;
+  minLength?: number;
+  maxLength?: number;
+  defaultValue?: string;
+}
+export const Textarea = defineDualComponent<TextareaProps>({
+  name: "textarea",
+  render: ({ name, label, required, placeholder, rows, minLength, maxLength, defaultValue }) => (
+    <label className="flex flex-col gap-1.5 text-sm">
+      {label ? (
+        <span className="font-medium text-slate-700">
+          {label}
+          {required ? (
+            <span className="ml-0.5 text-red-500" aria-label="required">*</span>
+          ) : null}
+        </span>
+      ) : null}
+      <textarea
+        name={name}
+        required={required}
+        placeholder={placeholder}
+        rows={rows ?? 4}
+        minLength={minLength}
+        maxLength={maxLength}
+        defaultValue={defaultValue}
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 shadow-sm transition-shadow focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-y"
+      />
+    </label>
+  ),
+  toMarkdown: ({ name, label, required, placeholder, rows, minLength, maxLength, defaultValue }) => {
+    const attrs: Record<string, string> = { name };
+    if (label) attrs.label = label;
+    if (placeholder) attrs.placeholder = placeholder;
+    if (rows != null) attrs.rows = String(rows);
+    if (minLength != null) attrs.minlength = String(minLength);
+    if (maxLength != null) attrs.maxlength = String(maxLength);
+    if (defaultValue != null && defaultValue !== "") attrs.default = defaultValue;
+    if (required) attrs.required = "";
+    return {
+      type: "leafDirective",
+      name: "textarea",
+      attributes: attrs,
+      children: [] as never,
+    };
+  },
+});
+
+export interface CheckboxProps {
+  name: string;
+  label?: string;
+  required?: boolean;
+  checked?: boolean;
+}
+export const Checkbox = defineDualComponent<CheckboxProps>({
+  name: "checkbox",
+  render: ({ name, label, required, checked }) => (
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        name={name}
+        defaultChecked={checked}
+        required={required}
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
+      />
+      {label ? <span className="font-medium text-slate-700">{label}</span> : null}
+    </label>
+  ),
+  toMarkdown: ({ name, label, required, checked }) => {
+    const attrs: Record<string, string> = { name };
+    if (label) attrs.label = label;
+    if (checked) attrs.checked = "";
+    if (required) attrs.required = "";
+    return {
+      type: "leafDirective",
+      name: "checkbox",
+      attributes: attrs,
+      children: [] as never,
+    };
+  },
+});
+
+export interface RadioProps {
+  name: string;
+  value: string;
+  label?: string;
+  required?: boolean;
+  checked?: boolean;
+}
+export const Radio = defineDualComponent<RadioProps>({
+  name: "radio",
+  render: ({ name, value, label, required, checked }) => (
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        defaultChecked={checked}
+        required={required}
+        className="h-4 w-4 border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30"
+      />
+      {label ? <span className="font-medium text-slate-700">{label}</span> : null}
+    </label>
+  ),
+  toMarkdown: ({ name, value, label, required, checked }) => {
+    const attrs: Record<string, string> = { name, value };
+    if (label) attrs.label = label;
+    if (checked) attrs.checked = "";
+    if (required) attrs.required = "";
+    return {
+      type: "leafDirective",
+      name: "radio",
+      attributes: attrs,
+      children: [] as never,
+    };
+  },
+});
+
+function AlertIcon({ kind }: { kind: AlertProps["kind"] }) {
+  const common = {
+    viewBox: "0 0 24 24",
+    width: 18,
+    height: 18,
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  switch (kind) {
+    case "note":
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v.5" />
+          <path d="M11 12h1v4h1" />
+        </svg>
+      );
+    case "tip":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M12 3a6 6 0 0 0-4 10.5V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.5A6 6 0 0 0 12 3z" />
+          <path d="M10 21h4" />
+        </svg>
+      );
+    case "important":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M12 2l3 6 6 .9-4.5 4.3 1 6.3L12 16.9l-5.5 2.6 1-6.3L3 8.9 9 8l3-6z" />
+        </svg>
+      );
+    case "warning":
+      return (
+        <svg {...common} aria-hidden="true">
+          <path d="M10.3 3.9L2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+    case "caution":
+      return (
+        <svg {...common} aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v6" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+  }
+}
+
 export interface AlertProps {
   kind: "note" | "tip" | "important" | "warning" | "caution";
   children: ReactNode;
@@ -487,17 +811,48 @@ export interface AlertProps {
 export const Alert = defineDualComponent<AlertProps>({
   name: "alert",
   render: ({ kind, children }) => {
-    const palette: Record<AlertProps["kind"], string> = {
-      note: "bg-blue-50 border-blue-200 text-blue-900",
-      tip: "bg-green-50 border-green-200 text-green-900",
-      important: "bg-purple-50 border-purple-200 text-purple-900",
-      warning: "bg-yellow-50 border-yellow-200 text-yellow-900",
-      caution: "bg-red-50 border-red-200 text-red-900",
+    const palette: Record<AlertProps["kind"], { bg: string; icon: string; label: string }> = {
+      note: {
+        bg: "from-blue-50 to-blue-50/30 border-blue-200 text-blue-950",
+        icon: "text-blue-500 bg-blue-100",
+        label: "text-blue-700",
+      },
+      tip: {
+        bg: "from-emerald-50 to-emerald-50/30 border-emerald-200 text-emerald-950",
+        icon: "text-emerald-600 bg-emerald-100",
+        label: "text-emerald-700",
+      },
+      important: {
+        bg: "from-violet-50 to-violet-50/30 border-violet-200 text-violet-950",
+        icon: "text-violet-600 bg-violet-100",
+        label: "text-violet-700",
+      },
+      warning: {
+        bg: "from-amber-50 to-amber-50/30 border-amber-200 text-amber-950",
+        icon: "text-amber-600 bg-amber-100",
+        label: "text-amber-700",
+      },
+      caution: {
+        bg: "from-red-50 to-red-50/30 border-red-200 text-red-950",
+        icon: "text-red-600 bg-red-100",
+        label: "text-red-700",
+      },
     };
+    const p = palette[kind];
     return (
-      <aside className={`rounded-md border px-4 py-3 ${palette[kind]}`}>
-        <div className="text-xs font-semibold uppercase tracking-wide">{kind}</div>
-        <div className="mt-1 text-sm">{children}</div>
+      <aside
+        className={`flex gap-3 rounded-xl border bg-gradient-to-br px-4 py-3 ${p.bg}`}
+        role="note"
+      >
+        <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${p.icon}`}>
+          <AlertIcon kind={kind} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className={`text-[11px] font-semibold uppercase tracking-widest ${p.label}`}>
+            {kind}
+          </div>
+          <div className="mt-0.5 text-sm leading-6">{children}</div>
+        </div>
       </aside>
     );
   },
@@ -506,6 +861,26 @@ export const Alert = defineDualComponent<AlertProps>({
     data: { gfmAlert: kind },
     children: ctx.walk(children) as never,
   }),
+});
+
+export interface CodeBlockProps {
+  language?: string;
+  meta?: string;
+  children: ReactNode;
+}
+export const CodeBlock = defineDualComponent<CodeBlockProps>({
+  name: "code-block",
+  render: ({ language, children }) => (
+    <pre className="overflow-x-auto rounded-lg bg-slate-900 p-4 text-sm text-slate-100">
+      <code className={language ? `language-${language}` : undefined}>{asText(children)}</code>
+    </pre>
+  ),
+  toMarkdown: ({ language, meta, children }) => ({
+    type: "code",
+    lang: language ?? null,
+    meta: meta ?? null,
+    value: asText(children),
+  } as MdNode),
 });
 
 export interface TableColumn<R> {
@@ -617,114 +992,167 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       : null;
 
     return (
-      <section className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.12)]">
         {caption ? (
-          <div className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border-b border-gray-200">
-            {caption}
+          <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-5 py-3">
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500"
+            />
+            <div className="text-sm font-semibold text-slate-800">{caption}</div>
+            {typeof total === "number" ? (
+              <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+                {total.toLocaleString()} total
+              </span>
+            ) : null}
           </div>
         ) : null}
         {filterEntries.length ? (
-          <div className="flex flex-wrap gap-1 px-4 py-2 text-xs text-gray-600 border-b border-gray-100">
-            <span className="font-medium text-gray-700">Filter:</span>
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 bg-white px-5 py-2.5 text-xs">
+            <span className="font-medium text-slate-500">Filter</span>
             {filterEntries.map(([k, v]) => (
-              <span key={k} className="rounded bg-gray-100 px-2 py-0.5">
-                {k}: {String(v)}
+              <span
+                key={k}
+                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-700"
+              >
+                <span className="text-slate-400">{k}</span>
+                <span className="text-slate-300">·</span>
+                <span className="font-medium">{String(v)}</span>
               </span>
             ))}
           </div>
         ) : null}
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-700">
-            <tr>
-              {showIdColumn ? <th className="px-4 py-2 text-left font-medium">id</th> : null}
-              {columns.map((c) => {
-                const url = sortLinkForCol(c.key);
-                const indicator =
-                  parsedSort?.key === c.key ? (parsedSort.dir === "asc" ? " ▲" : " ▼") : "";
-                return (
-                  <th
-                    key={c.key}
-                    className={`px-4 py-2 font-medium text-${c.align ?? "left"}`}
-                  >
-                    {url ? (
-                      <a href={url} data-sort={c.key} className="hover:underline">
-                        {c.label}
-                        {indicator}
-                      </a>
-                    ) : (
-                      <>
-                        {c.label}
-                        {indicator}
-                      </>
-                    )}
-                  </th>
-                );
-              })}
-              {actions.length ? (
-                <th className="px-4 py-2 text-left font-medium">Actions</th>
-              ) : null}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={String(r.id)}
-                data-rui-id={String(r.id)}
-                className="border-t border-gray-100"
-              >
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-600">
                 {showIdColumn ? (
-                  <td className="px-4 py-2 text-xs text-gray-500 font-mono">{String(r.id)}</td>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">
+                    id
+                  </th>
                 ) : null}
-                {columns.map((c) => (
-                  <td key={c.key} className={`px-4 py-2 text-${c.align ?? "left"}`}>
-                    {String(r[c.key] ?? "")}
-                  </td>
-                ))}
-                {actions.length ? (
-                  <td className="px-4 py-2 space-x-2">
-                    {actions.map((a) => {
-                      const color =
-                        a.variant === "danger"
-                          ? "text-red-600"
-                          : a.variant === "secondary"
-                            ? "text-gray-600"
-                            : "text-blue-600";
-                      const url = buildActionURI(a.tool, a.params(r));
-                      return (
+                {columns.map((c) => {
+                  const url = sortLinkForCol(c.key);
+                  const isActive = parsedSort?.key === c.key;
+                  const indicator = isActive ? (parsedSort!.dir === "asc" ? " ▲" : " ▼") : "";
+                  const alignCls =
+                    c.align === "right"
+                      ? "text-right"
+                      : c.align === "center"
+                        ? "text-center"
+                        : "text-left";
+                  return (
+                    <th
+                      key={c.key}
+                      className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-wider ${alignCls}`}
+                    >
+                      {url ? (
                         <a
-                          key={a.tool}
                           href={url}
-                          data-action={a.tool}
-                          className={`${color} underline hover:no-underline`}
+                          data-sort={c.key}
+                          className={`inline-flex items-center gap-1 rounded transition-colors hover:text-slate-900 ${
+                            isActive ? "text-blue-700" : ""
+                          }`}
                         >
-                          {a.label}
+                          {c.label}
+                          {indicator}
                         </a>
-                      );
-                    })}
-                  </td>
+                      ) : (
+                        <>
+                          {c.label}
+                          {indicator}
+                        </>
+                      )}
+                    </th>
+                  );
+                })}
+                {actions.length ? (
+                  <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider">
+                    Actions
+                  </th>
                 ) : null}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((r, idx) => (
+                <tr
+                  key={String(r.id)}
+                  data-rui-id={String(r.id)}
+                  className={`group transition-colors hover:bg-blue-50/40 ${idx % 2 === 1 ? "bg-slate-50/30" : ""}`}
+                >
+                  {showIdColumn ? (
+                    <td className="px-5 py-3">
+                      <span className="font-mono text-[11px] text-slate-400">
+                        {String(r.id)}
+                      </span>
+                    </td>
+                  ) : null}
+                  {columns.map((c) => {
+                    const alignCls =
+                      c.align === "right"
+                        ? "text-right"
+                        : c.align === "center"
+                          ? "text-center"
+                          : "text-left";
+                    return (
+                      <td
+                        key={c.key}
+                        className={`px-5 py-3 text-slate-800 ${alignCls}`}
+                      >
+                        {String(r[c.key] ?? "")}
+                      </td>
+                    );
+                  })}
+                  {actions.length ? (
+                    <td className="px-5 py-3 text-right">
+                      <span className="inline-flex gap-3 opacity-80 transition-opacity group-hover:opacity-100">
+                        {actions.map((a) => {
+                          const color =
+                            a.variant === "danger"
+                              ? "text-red-600 hover:text-red-700"
+                              : a.variant === "secondary"
+                                ? "text-slate-600 hover:text-slate-800"
+                                : "text-blue-600 hover:text-blue-800";
+                          const url = buildActionURI(a.tool, a.params(r));
+                          return (
+                            <a
+                              key={a.tool}
+                              href={url}
+                              data-action={a.tool}
+                              className={`text-xs font-medium underline-offset-2 hover:underline ${color}`}
+                            >
+                              {a.label}
+                            </a>
+                          );
+                        })}
+                      </span>
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {(typeof page === "number" && typeof of === "number" && of > 1) ||
         showSummaryFooter ? (
-          <div className="flex items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-600">
+          <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/40 px-5 py-3 text-xs text-slate-600">
             <div>
               {typeof page === "number" && typeof of === "number" ? (
                 <>
-                  Page <span className="font-medium">{page}</span> of{" "}
-                  <span className="font-medium">{of}</span>
-                  {typeof total === "number" ? ` (${total} rows)` : null}
+                  Page <span className="font-semibold text-slate-800">{page}</span> of{" "}
+                  <span className="font-semibold text-slate-800">{of}</span>
+                  {typeof total === "number" ? (
+                    <span className="text-slate-400"> · {total.toLocaleString()} rows</span>
+                  ) : null}
                 </>
               ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
               {typeof page === "number" && page > 1 && pageLinkFor(page - 1) ? (
                 <a
                   href={pageLinkFor(page - 1) as string}
                   data-page={page - 1}
-                  className="text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
                 >
                   ← Prev
                 </a>
@@ -733,13 +1161,16 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
                 <a
                   href={pageLinkFor(page + 1) as string}
                   data-page={page + 1}
-                  className="text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
                 >
                   Next →
                 </a>
               ) : null}
               {summaryFooterUrl ? (
-                <a href={summaryFooterUrl} className="text-blue-600 hover:underline">
+                <a
+                  href={summaryFooterUrl}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-blue-600 hover:bg-blue-50"
+                >
                   View all {total} rows
                 </a>
               ) : null}

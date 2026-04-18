@@ -65,6 +65,7 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - Markdown: `![alt](url)`
 - HTML: `<img>`
 - Props: `src: string`, `alt: string` (required)
+- Note: JSX prop `src` → mdast 필드 `url` (ADR 0017 JSX↔attribute 명명 패턴; `Link.href → url`과 동형).
 
 ### CodeSpan
 
@@ -109,6 +110,11 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - Props: `kind: note|tip|important|warning|caution`, `children: block nodes`
 - 직렬화: `@readable-ui/core`의 `gfmAlertHandler`가 `blockquote` handler override하여 `[!KIND]` 헤더를 raw로 조립 — 이스케이프(`\[`) 없음, blank-line `>` 없음. mdast 노드에 `data.gfmAlert: kind` 마커 필요.
 - GFM alert 5종 고정. `info/success/error`는 의미 매핑(`info→note`, `success→tip`, `error→warning`) 또는 후속 ADR에서 확장.
+
+**빈 상태·위험 동작 관용구 (ADR 0019)**:
+- `kind=warning`: 리소스 전체 부재(404). Card를 내보내지 않고 Alert 단독.
+- `kind=note`: Table `rows: []` 빈 목록. Table 형제 레벨에 배치.
+- `kind=caution`: destructive 2단계 전이의 영향 예고. 본문에 List 허용.
 
 ### CodeBlock
 
@@ -183,8 +189,12 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
   - `_page`, `_size`, `_sort`, `_filter_<field>` — tool 자체 param과 충돌 방지.
   - 헤더 컬럼 클릭 = 현재 `filter`/`size` 유지, `_sort=<key>:<dir>` 토글, `_page=1` 리셋.
   - 페이지 이동 = 현재 `sort`/`filter`/`size` 유지, `_page=N`만 변경.
-- **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 시 warning — `readable-ui:data` fenced payload 분리 경로는 후속 ADR.
+- **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 시 warning — `readable-ui:data` fenced payload 분리 경로는 후속 ADR. 2열 transpose를 단건 상세 용도로 사용 금지 (ADR 0018).
 - 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
+
+**`rows: []` 처리 (ADR 0019 §2)**: 엔진은 자동 placeholder를 삽입하지 않는다. `total=0` attribute 명시 권장, 저자가 Table 형제 레벨에 `Alert{kind=note}`를 배치한다.
+
+**행 상태 표기 (ADR 0019 §3)**: Table 셀 내부 상태 값은 `CodeSpan`으로 표기한다. 5단계 권고 팔레트(비강제): `active`, `pending`, `archived`, `disabled`, `error`. 도메인 특수 상태도 CodeSpan이면 허용. v1은 시각 강제 없음 — Table React render는 `String()` plain text 유지, v2에서 render override 예약.
 - `tool` 및 `actions[].tool`은 envelope `tools[]`에 선언된 이름이어야 함 (envelope 검증규칙 3).
 - envelope `pagination`과 directive `page/of/size`가 공존하면 directive 우선, 불일치 시 warning (ADR 0015 §4).
 - **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 등은 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
@@ -261,51 +271,101 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - **Form 내부 action 생략** (ADR 0013): `ctx.formAction === props.action` 이면 `action` 속성을 생략해 `::button[Label]` 로만 출력. 다른 action은 명시 유지 (Cancel/Save draft 패턴 수용).
 - **중복 의미 규범**: directive와 fallback link paragraph는 **동일 호출의 이중 표현**이다. AI는 한 번의 호출로 해석해야 한다.
 
+**위험 동작 관용구 (ADR 0019 §1)**: destructive tool(`deleteX`, `archiveX`)은 2단계 페이지 전이 관용구로 호출한다.
+- 1단계 진입: `::button[<Verb>…]{variant=danger action=<verb><Resource>Preview}`. 라벨에 `…` suffix, `variant=danger` 필수.
+- 2단계: preview tool이 반환한 페이지 — 상세 Card + `Alert{kind=caution}` + Form(`Confirm <verb>` Button + `Cancel` Button).
+
 ### Input
 
-- Markdown: `::input{name=<field> type=<html5> label="..." required pattern="..." minlength="n" maxlength="n" min="n" max="n" step="n" format="..."}`
+- Markdown: `::input{name=<field> type=<html5> label="..." required pattern="..." minlength="n" maxlength="n" min="n" max="n" step="n" format="..." default="..."}`
 - HTML: `<input>` — HTML5 validation 속성과 1:1 매핑
-- Props: `{ name, type?, label?, required?, placeholder?, pattern?, minLength?, maxLength?, min?, max?, step?, format? }`
+- Props: `{ name, type?, label?, required?, placeholder?, pattern?, minLength?, maxLength?, min?, max?, step?, format?, defaultValue? }`
 - `type` 허용: `text | email | password | number | url | date | datetime-local | tel | search`
 - JSON Schema 매핑:
   - `format: email` → `type="email"` 또는 attribute `format`
   - `pattern` → `pattern`
   - `minLength` / `maxLength` → `minlength` / `maxlength` (HTML5 lowercase)
   - `minimum` / `maximum` → `min` / `max`
+  - `properties.<field>.default` → directive `default` attribute (SSOT: directive)
 - Boolean attribute (`required`)는 value 없이(`::input{... required}`) 출력 — `attributes.required = ""`.
 - Form context 안에서만 유효.
 
 ### Select
 
-- Markdown: `::select{name=<field> options="a,b,c" label="..." required multiple}`
+- Markdown (single): `::select{name=<field> options="a,b,c" label="..." required default=admin}`
+- Markdown (multiple): `::select{name=<field> options="a,b,c" label="..." multiple default="a,b,c"}`
 - HTML: `<select>`
-- Props: `{ name, options: string[], label?, required?, multiple? }`
+- Props: `{ name, options: string[], label?, required?, multiple?, defaultValue? }`
 - JSON Schema `enum: [...]`을 본문에 `options="..."`로 노출 — envelope ↔ 본문 스키마 대칭 보장.
 - `options` 값에 쉼표 포함 시 향후 JSON 배열 문자열로 표기 권고 (현재 비지원).
+- `default` (single): 문자열 하나. `default` (multiple): 쉼표 구분 문자열 — `options` 분리 규약과 동일. 값에 쉼표 포함은 v1 비지원.
+- `default`(multiple)는 `options`와 동일한 쉼표 구분 문자열을 쓴다. 값에 쉼표 포함은 v1 비지원 (ADR 0017 §3.1).
 
 ### Textarea
 
-- Markdown: `::textarea{name=<field> rows=4 required}`
+- Markdown: `::textarea{name=<field> label="..." placeholder="..." rows=4 minlength=10 maxlength=2000 required default="..."}`
 - HTML: `<textarea>`
+- Props: `{ name, label?, required?, placeholder?, rows?, minLength?, maxLength?, defaultValue? }`
+- `rows` 기본값 4 (render only — toMarkdown에는 명시된 경우만 반영).
+- JSON Schema 매핑: `format: "textarea"` 가 primary signal; `maxLength >= 200` 은 heuristic fallback.
+- Form context 내 전용, fallback 병기 대상 아님.
+- `default` 값에 큰따옴표 포함 시 `mdast-util-directive`가 quoting을 처리한다.
+- Textarea `default`는 multi-line 문자열을 수용한다. `mdast-util-directive`의 attribute quoting으로 `\n`은 escape되어 보존되고, 값 내 `"`는 `\"`로 escape된다 (ADR 0017 §3.3).
 
 ### Checkbox
 
-- Markdown: `::checkbox{name=<field> label="I agree"}`
+- Markdown: `::checkbox{name=<field> label="I agree" checked required}`
 - HTML: `<input type=checkbox>`
+- Props: `{ name, label?, required?, checked? }`
+- `value` 속성 없음 — HTML checkbox의 `value`는 form submit 용도이며 v1 scope 외.
+- `checked` 는 boolean attribute (`checked=""`) 규약 준수.
+- JSON Schema `type: "boolean"` 매핑.
+- `required + checked=false` 조합은 "동의 강제" 관용구 (사용자가 직접 체크해야 통과).
+- `checked`는 다른 위젯의 `default`와 동일한 초기값 슬롯이며, boolean 성격으로 `checked` 이름을 유지한다.
 
 ### Radio
 
-- Markdown: `::radio{name=<field> value=<value> label=<label>}`
+- Markdown: `::radio{name=<field> value=<value> label=<label> checked required}`
 - HTML: `<input type=radio>`
+- Props: `{ name, value, label?, required?, checked? }` — `value` 필수.
+- 같은 `name` 을 공유하는 Radio directive들이 그룹을 형성.
+- JSON Schema `enum` (3~5개) → Radio 그룹, 그 이상 → Select 권장.
+- `required` 는 그룹 중 하나에만 붙여도 HTML 표준상 그룹 전체 적용. 첫 번째 Radio에 붙이는 것을 권장.
+- `checked`는 다른 위젯의 `default`와 동일한 초기값 슬롯이며, boolean 성격으로 `checked` 이름을 유지한다.
 
 ## 공통 규약
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `min`, `max`, `step`, `format`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
+   JSX prop ↔ Markdown attribute 명명은 [ADR 0017](../adr/0017-jsx-markdown-attribute-naming.md) 참조.
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
 5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).
 6. **셀 이스케이프 수용**: Table 셀 내부의 `\_`, `\@` 등은 round-trip clean 동작. 버그 아님.
+7. **입력 위젯 fallback 정책**: Input/Select/Textarea/Checkbox/Radio는 action을 trigger하지 않으므로 fallback link-as-action 병기 대상이 아니다. directive만 출력한다.
+
+8. **단건 상세 관용구 (ADR 0018)**: Read-one / show 화면은 다음 정규형을 따른다.
+
+   ```markdown
+   :::card{title="Details"}
+   - **Field**: value
+   - **Another field**: value
+   :::
+   ```
+
+   - 컨테이너: Card (title="Details" 또는 의미 제목). Section 단독도 허용.
+   - 리스트: unordered. task list / ordered 금지.
+   - 각 ListItem 내부: `Strong(field) + ": " + inline value`. 인라인은 text/Emphasis/Strong/CodeSpan/Link만.
+   - 빈 값: `*none*`. null/-/"—" 혼용 금지.
+   - 2열 Table transpose는 단건 상세 용도 사용 금지 — ADR 0015와 의미 오버로드 회피.
+
+9. **위험 동작 관용구 (ADR 0019)**: destructive tool은 1단계 `::button[<Verb>…]{variant=danger action=<verb><Resource>Preview}` → 2단계 preview 페이지 (Card + `Alert{kind=caution}` + Form)의 2단계 전이로 호출한다. Button `confirm` 속성은 v1 미지원.
+
+10. **빈 값 표기 (ADR 0018/0019)**:
+   - 단건 상세 필드 null: `*none*` (별표 1쌍, 괄호 없음, 소문자, 영어 고정). `*None*`/`*NONE*`/`*"none"*`/`(none)`/`null`/`—`/`N/A` 금지. 로케일 번역 v1 금지.
+   - Table 셀 null: 빈 문자열 `""` 또는 `—` 허용 (반복 노이즈 회피).
+   - 리소스 전체 부재: `Alert{kind=warning}`.
+   - Table 전체 빈 상태: `Alert{kind=note}` (Table 형제 레벨).
 
 ## 미정 / 후속
 
@@ -313,4 +373,5 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - **info/success/error** alert 확장 — GFM 5종 외 추가 여부.
 - **Radio/Checkbox 그룹 컨테이너** — 현재 개별 directive. 그룹 필요성 재검토 대상.
 - **Media 컴포넌트** (Video, Audio) — v1 미포함.
-- **Empty / Loading / Error state** 표현 — 후속 ADR.
+- **Empty state** 결정 완료 (ADR 0019). **Loading / Error state** 표현 — 후속 ADR.
+- **v1 구현 유예 (Tier 3)**: Section, Steps, Tabs, Accordion, Split 5종은 spec 카탈로그에 등재되어 있으나 v1에서 구현을 유예한다. 기존 관용구(Card/Heading 나열)로 대체 가능. 구현 시 후속 ADR이 선행한다.

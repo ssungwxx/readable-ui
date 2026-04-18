@@ -36,6 +36,10 @@
 - [0013 — Form 내부 Button의 action 속성 생략](./adr/0013-suppress-form-inner-button-action.md)
 - [0014 — Global nav as envelope metadata](./adr/0014-nav-as-envelope-metadata.md)
 - [0015 — Table as container directive (pagination/sort/filter)](./adr/0015-table-as-container-directive.md)
+- [0016 — Form input default value convention](./adr/0016-form-default-value-convention.md)
+- [0017 — JSX prop ↔ Markdown attribute 명명 규칙](./adr/0017-jsx-markdown-attribute-naming.md)
+- [0018 — Detail view convention](./adr/0018-detail-view-convention.md)
+- [0019 — CRUD 액션 관용구: Delete 확인 · EmptyState · 행 상태](./adr/0019-crud-action-idioms.md)
 
 ## Open Decisions
 
