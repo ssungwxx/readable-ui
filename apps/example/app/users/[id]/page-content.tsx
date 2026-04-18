@@ -128,7 +128,7 @@ function makeUserDetailEnvelope({ id }: { id: string }): Envelope {
       view: `/users/${id}`,
       markdown: `/users/${id}.md`,
     },
-    updatedAt: new Date().toISOString(),
+    updatedAt: "2026-04-18T00:00:00.000Z",
     tools: [
       {
         name: "listUsers",
