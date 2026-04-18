@@ -4,9 +4,7 @@ import {
   Heading,
   Card,
   Alert,
-  Form,
   Input,
-  Button,
   List,
   ListItem,
   Strong,
@@ -83,7 +81,7 @@ function makeDeleteUserEnvelope({ id }: { id: string }): Envelope {
 
 export const deleteUserPage = definePage<{ id: string }>({
   envelope: makeDeleteUserEnvelope,
-  render: ({ id }) => {
+  render: ({ id }, { Button, Form }) => {
     const user = fixtureUsers[id] ?? {
       email: "unknown",
       role: "?",

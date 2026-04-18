@@ -6,11 +6,8 @@ import {
   Paragraph,
   Card,
   Alert,
-  Form,
   Input,
-  Button,
   CodeSpan,
-  Table,
   Descriptions,
 } from "@readable-ui/react/components";
 import { definePage, type Envelope } from "@readable-ui/react";
@@ -179,7 +176,7 @@ function makeUserDetailEnvelope({ id }: { id: string }): Envelope {
 
 export const userDetailPage = definePage<{ id: string }>({
   envelope: makeUserDetailEnvelope,
-  render: ({ id }) => {
+  render: ({ id }, { Button, Form, Table }) => {
   const user = fixtureUsers[id] ?? { ...fallbackUser, id };
   const activity = recentActivityFor(user.id);
 

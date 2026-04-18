@@ -2,14 +2,10 @@ import {
   Page,
   Heading,
   Paragraph,
-  Link,
   Card,
-  Form,
   Input,
   Select,
-  Button,
   Alert,
-  Table,
 } from "@readable-ui/react/components";
 import { definePage } from "@readable-ui/react";
 import { adminNav } from "../_shared/admin-nav";
@@ -143,7 +139,7 @@ export const usersPage = definePage({
     },
   ],
   },
-  render: () => (
+  render: (_, { Button, Form, Table, Link }) => (
     <Page>
       <Heading level={1}>Users</Heading>
       <Paragraph>

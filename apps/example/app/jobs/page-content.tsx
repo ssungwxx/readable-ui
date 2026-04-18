@@ -4,8 +4,6 @@ import {
   Page,
   Heading,
   Paragraph,
-  Link,
-  Table,
   Alert,
   CodeSpan,
 } from "@readable-ui/react/components";
@@ -66,7 +64,7 @@ export const jobsPage = definePage({
     },
   ],
   },
-  render: () => (
+  render: (_, { Table, Link }) => (
     <Page>
       <Heading level={1}>Background jobs</Heading>
       <Paragraph>

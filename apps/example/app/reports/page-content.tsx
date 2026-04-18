@@ -2,11 +2,8 @@ import {
   Page,
   Heading,
   Paragraph,
-  Link,
   Card,
   Alert,
-  Button,
-  Table,
   List,
   ListItem,
   Stat,
@@ -114,7 +111,7 @@ export const reportsPage = definePage({
     },
   ],
   },
-  render: () => (
+  render: (_, { Button, Table, Link }) => (
     <Page>
       <Heading level={1}>Reports</Heading>
       <Paragraph>

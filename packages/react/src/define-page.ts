@@ -1,10 +1,47 @@
-import { cloneElement, isValidElement, type ReactElement } from "react";
+import { cloneElement, isValidElement, type FC, type ReactElement, type ReactNode } from "react";
 import {
   parseEnvelope,
   renderPage,
   type Envelope,
+  type EnvelopeTool,
 } from "@readable-ui/core";
-import { Page, type PageProps } from "./components.js";
+import {
+  Button,
+  Form,
+  Table,
+  Link,
+  Page,
+  type ButtonProps,
+  type FormProps,
+  type TableProps,
+  type LinkProps,
+  type ActionProp,
+  type TypedTableProps,
+  type PageProps,
+} from "./components.js";
+
+/**
+ * ADR 0028 — Typed proxy injected as the 2nd argument of `render`.
+ *
+ * Each catalog component is re-typed so that `action` / `tool` props are
+ * narrowed to `Tools[number]["name"]` — the literal union of tool names
+ * declared in `envelope.tools`. Runtime behaviour is identical to the global
+ * components (passthrough); the narrowing is purely at the type level.
+ *
+ * Author usage:
+ *   render: (params, { Button, Form, Table, Link }) => (…)
+ *
+ * Global imports of Button/Form/Table/Link remain unaffected (ADR 0007 —
+ * catalog closure: no new catalog entries).
+ */
+export type DefinePageProxy<Tools extends readonly EnvelopeTool[]> = {
+  Button: FC<Omit<ButtonProps, "action"> & ActionProp<Tools[number]["name"]>>;
+  Form: FC<Omit<FormProps, "action"> & ActionProp<Tools[number]["name"]>>;
+  Table: <R extends { id: string | number }>(
+    props: TypedTableProps<R, Tools[number]["name"]>
+  ) => ReactNode;
+  Link: FC<LinkProps>;
+};
 
 /**
  * ADR 0026 — DX layer that collapses page-content + .md/route boilerplate.
@@ -17,10 +54,15 @@ import { Page, type PageProps } from "./components.js";
  * Envelope is the single source of truth for layout/nav/breadcrumb. When the
  * root of the tree is `<Page>`, missing props are filled from envelope via
  * `cloneElement` (no React Context — ADR 0008 walker semantics preserved).
+ *
+ * ADR 0028 — 2nd generic `Tools` captures envelope.tools literal so that the
+ * `proxy` injected as render's 2nd argument narrows action/tool props to the
+ * declared tool-name union. Omitting the 2nd argument falls back to the global
+ * components (backward compatible).
  */
-export interface DefinePageOptions<P = void> {
-  envelope: Envelope | ((params: P) => Envelope);
-  render: (params: P) => ReactElement;
+export interface DefinePageOptions<P = void, Tools extends readonly EnvelopeTool[] = readonly EnvelopeTool[]> {
+  envelope: (Envelope & { tools?: Tools }) | ((params: P) => Envelope & { tools?: Tools });
+  render: (params: P, proxy: DefinePageProxy<Tools>) => ReactElement;
 }
 
 export type DefinedPage<P = void> = P extends void
@@ -37,8 +79,19 @@ export type DefinedPage<P = void> = P extends void
       envelope: (params: P) => Envelope;
     };
 
-export function definePage<P = void>(
-  opts: DefinePageOptions<P>
+/**
+ * Runtime proxy: plain passthrough to the original catalog components.
+ * ADR 0028 §경계 명시: walker sees the original ReactElement.type — no wrapping.
+ */
+const runtimeProxy: DefinePageProxy<readonly EnvelopeTool[]> = {
+  Button: Button as FC<ButtonProps>,
+  Form: Form as FC<FormProps>,
+  Table: Table as <R extends { id: string | number }>(props: TableProps<R>) => ReactNode,
+  Link: Link as FC<LinkProps>,
+};
+
+export function definePage<P = void, const Tools extends readonly EnvelopeTool[] = readonly EnvelopeTool[]>(
+  opts: DefinePageOptions<P, Tools>
 ): DefinedPage<P> {
   const envelopeIsFn = typeof opts.envelope === "function";
 
@@ -56,7 +109,7 @@ export function definePage<P = void>(
   }
 
   const buildTree = (params: P): ReactElement => {
-    const root = opts.render(params);
+    const root = opts.render(params, runtimeProxy as unknown as DefinePageProxy<Tools>);
     return bindPageEnvelope(root, resolveEnvelope(params));
   };
 

@@ -2,11 +2,8 @@ import {
   Page,
   Heading,
   Paragraph,
-  Link,
   Card,
   Alert,
-  Button,
-  Table,
 } from "@readable-ui/react/components";
 import { definePage } from "@readable-ui/react";
 import { adminNav } from "../_shared/admin-nav";
@@ -90,7 +87,7 @@ export const dashboardPage = definePage({
       },
     ],
   },
-  render: () => (
+  render: (_, { Button, Table, Link }) => (
     <Page>
       <Heading level={1}>Admin dashboard</Heading>
       <Paragraph>

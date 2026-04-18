@@ -2,10 +2,8 @@ import {
   Page,
   Heading,
   Paragraph,
-  Link,
   Card,
   Alert,
-  Table,
   List,
   ListItem,
 } from "@readable-ui/react/components";
@@ -144,7 +142,7 @@ export const auditPage = definePage({
     },
   ],
   },
-  render: () => (
+  render: (_, { Table, Link }) => (
     <Page>
       <Heading level={1}>Audit log</Heading>
       <Paragraph>

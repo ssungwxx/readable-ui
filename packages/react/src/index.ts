@@ -50,6 +50,10 @@ export type {
 
 // ADR 0026 — DX layer. Reuses existing Page/renderPage; adds no catalog entries.
 export { definePage } from "./define-page.js";
-export type { DefinePageOptions, DefinedPage } from "./define-page.js";
+export type { DefinePageOptions, DefinedPage, DefinePageProxy } from "./define-page.js";
 export { defineNav } from "./define-nav.js";
 export type { DefinedNav } from "./define-nav.js";
+
+// ADR 0028 — compile-time tool validation helper.
+// Preserves literal tuple type so Tools[number]["name"] stays a union of string literals.
+export { defineTools } from "./define-tools.js";

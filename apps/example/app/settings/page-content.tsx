@@ -8,7 +8,6 @@ import {
   Link,
   Card,
   Alert,
-  Button,
   Input,
   Select,
   Checkbox,
@@ -25,7 +24,7 @@ import { settingsEnvelope } from "./envelope";
 
 export const settingsPage = definePage({
   envelope: settingsEnvelope,
-  render: () => (
+  render: (_, { Button }) => (
     <Page>
       <Heading level={1}>Settings</Heading>
       <Paragraph>

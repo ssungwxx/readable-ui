@@ -2187,3 +2187,38 @@ export const Split = defineDualComponent<SplitProps>({
     children: ctx.walk(children) as never,
   }),
 });
+
+// ============================================================================
+// ADR 0028 — Compile-time tool validation utility types
+// ============================================================================
+
+/**
+ * Narrows the `action` prop of Button / Form to a specific tool-name union.
+ * Used by DefinePageProxy in define-page.ts — not for direct author use.
+ */
+export type ActionProp<ToolName extends string> = { action: ToolName };
+
+/**
+ * Narrows the `tool` prop of Table (and TableRowAction.tool) to a specific tool-name union.
+ * Used by DefinePageProxy in define-page.ts — not for direct author use.
+ */
+export type ToolProp<ToolName extends string> = { tool?: ToolName };
+
+/**
+ * Narrows TableRowAction so that `.tool` is constrained to ToolName.
+ */
+export interface TypedTableRowAction<R, ToolName extends string> {
+  tool: ToolName;
+  label: string;
+  variant?: "primary" | "secondary" | "danger";
+  params: (row: R) => Record<string, string | number | boolean>;
+}
+
+/**
+ * Narrows TableProps so that `tool` and `actions[].tool` are constrained to ToolName.
+ */
+export type TypedTableProps<R extends { id: string | number }, ToolName extends string> =
+  Omit<TableProps<R>, "tool" | "actions"> & {
+    tool?: ToolName;
+    actions?: TypedTableRowAction<R, ToolName>[];
+  };
