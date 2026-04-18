@@ -30,7 +30,7 @@ View Markdown .md
 
 TOPBAR
 
-Mixed composition — stat cards, weekly table, revenue by plan, export.
+Stat / Progress / Descriptions directives — KPI, quota bars, metadata, and exportable tables.
 
 View HTML
 
@@ -60,7 +60,7 @@ View Markdown .md
 
 DETAIL
 
-Single-resource view — back nav, profile + meta rail, footer destructive action.
+Single-resource view — breadcrumb, Descriptions profile/meta rail, destructive footer.
 
 View HTML
 

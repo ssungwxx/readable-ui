@@ -1,6 +1,6 @@
-# readable-ui bench — 2026-04-18T03-33-45-531Z
+# readable-ui bench — 2026-04-18T05-04-18-922Z
 
-- git: `5bd03ea`
+- git: `5a60c7c`
 - node: `v22.14.0`
 - transports: readable-ui, ax-tree, headful-md
 - scenarios: 7
@@ -14,8 +14,8 @@
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | readable-ui | — | — | — | — | — | — | — |
-| ax-tree | 63632 | 63587 | 15968 | 9.9 | 12 | 1330.67 | — |
-| headful-md | 1106 | 1091 | 305 | 0.1 | 0 | — | — |
+| ax-tree | 63719 | 63674 | 15991 | 4.7 | 12 | 1332.58 | — |
+| headful-md | 1135 | 1120 | 312 | 0.1 | 0 | — | — |
 
 ### `dashboard` — /dashboard
 
@@ -23,8 +23,8 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 2672 | 2667 | 793 | 6.5 | 5 | 158.60 | 1 |
-| ax-tree | 80545 | 80539 | 20361 | 11.2 | 11 | 1851 | 25.68 |
+| readable-ui | 2672 | 2667 | 793 | 7.5 | 5 | 158.60 | 1 |
+| ax-tree | 80545 | 80539 | 20359 | 4.3 | 11 | 1850.82 | 25.67 |
 | headful-md | 914 | 912 | 334 | 0.1 | 1 | 334 | 0.42 |
 
 ### `users` — /users
@@ -33,8 +33,8 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 5386 | 5367 | 1494 | 6.5 | 13 | 114.92 | 1 |
-| ax-tree | 132092 | 131959 | 34063 | 12.1 | 29 | 1174.59 | 22.80 |
+| readable-ui | 5386 | 5367 | 1494 | 7.6 | 13 | 114.92 | 1 |
+| ax-tree | 132092 | 131959 | 34060 | 4.8 | 29 | 1174.48 | 22.80 |
 | headful-md | 1155 | 1132 | 425 | 0.2 | 4 | 106.25 | 0.28 |
 
 ### `user-detail` — /users/u_alice_01
@@ -43,9 +43,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 3055 | 3050 | 907 | 7.1 | 3 | 302.33 | 1 |
-| ax-tree | 84274 | 84236 | 21921 | 6.0 | 10 | 2192.10 | 24.17 |
-| headful-md | 705 | 689 | 271 | 0.1 | 3 | 90.33 | 0.30 |
+| readable-ui | 3132 | 3127 | 927 | 8.0 | 3 | 309 | 1 |
+| ax-tree | 85859 | 85821 | 22328 | 4.6 | 10 | 2232.80 | 24.09 |
+| headful-md | 719 | 703 | 275 | 0.1 | 3 | 91.67 | 0.30 |
 
 ### `reports` — /reports
 
@@ -53,9 +53,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 4052 | 4044 | 1197 | 5.3 | 8 | 149.63 | 1 |
-| ax-tree | 128665 | 128636 | 33358 | 11.4 | 15 | 2223.87 | 27.87 |
-| headful-md | 1518 | 1507 | 526 | 0.1 | 1 | 526 | 0.44 |
+| readable-ui | 4834 | 4805 | 1504 | 6.5 | 8 | 188 | 1 |
+| ax-tree | 178220 | 178137 | 46406 | 7.9 | 15 | 3093.73 | 30.86 |
+| headful-md | 1723 | 1690 | 666 | 0.2 | 1 | 666 | 0.44 |
 
 ### `audit` — /audit
 
@@ -63,8 +63,8 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 35162 | 35035 | 13164 | 6.1 | 5 | 2632.80 | 1 |
-| ax-tree | 106360 | 106302 | 27794 | 3.9 | 17 | 1634.94 | 2.11 |
+| readable-ui | 35162 | 35035 | 13164 | 7.4 | 5 | 2632.80 | 1 |
+| ax-tree | 106360 | 106302 | 27813 | 5.1 | 17 | 1636.06 | 2.11 |
 | headful-md | 1195 | 1179 | 425 | 0.1 | 0 | — | 0.03 |
 
 ### `jobs` — /jobs
@@ -73,32 +73,32 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 2153 | 2148 | 608 | 4.8 | 0 | — | 1 |
-| ax-tree | 69025 | 69016 | 17885 | 8.1 | 12 | 1490.42 | 29.42 |
+| readable-ui | 2153 | 2148 | 608 | 6.1 | 0 | — | 1 |
+| ax-tree | 69025 | 69016 | 17880 | 3.8 | 12 | 1490 | 29.41 |
 | headful-md | 744 | 741 | 245 | 0.1 | 0 | — | 0.40 |
 
 ## Across-scenario summary
 
 | transport | metric | median | mean | min | max |
 |---|---|---:|---:|---:|---:|
-| readable-ui | bytes | 3553.50 | 8746.67 | 2153 | 35162 |
-| readable-ui | chars | 3547 | 8718.50 | 2148 | 35035 |
-| readable-ui | tokens | 1052 | 3027.17 | 608 | 13164 |
-| readable-ui | renderTimeMs | 6.31 | 6.06 | 4.80 | 7.07 |
+| readable-ui | bytes | 3983 | 8889.83 | 2153 | 35162 |
+| readable-ui | chars | 3966 | 8858.17 | 2148 | 35035 |
+| readable-ui | tokens | 1210.50 | 3081.67 | 608 | 13164 |
+| readable-ui | renderTimeMs | 7.42 | 7.16 | 6.08 | 7.96 |
 | readable-ui | actionable | 5 | 5.67 | 0 | 13 |
-| ax-tree | bytes | 84274 | 94941.86 | 63632 | 132092 |
-| ax-tree | chars | 84236 | 94896.43 | 63587 | 131959 |
-| ax-tree | tokens | 21921 | 24478.57 | 15968 | 34063 |
-| ax-tree | renderTimeMs | 9.93 | 8.93 | 3.91 | 12.07 |
+| ax-tree | bytes | 85859 | 102260 | 63719 | 178220 |
+| ax-tree | chars | 85821 | 102206.86 | 63674 | 178137 |
+| ax-tree | tokens | 22328 | 26405.29 | 15991 | 46406 |
+| ax-tree | renderTimeMs | 4.69 | 5.02 | 3.75 | 7.93 |
 | ax-tree | actionable | 12 | 15.14 | 10 | 29 |
-| headful-md | bytes | 1106 | 1048.14 | 705 | 1518 |
-| headful-md | chars | 1091 | 1035.86 | 689 | 1507 |
-| headful-md | tokens | 334 | 361.57 | 245 | 526 |
-| headful-md | renderTimeMs | 0.08 | 0.10 | 0.07 | 0.18 |
+| headful-md | bytes | 1135 | 1083.57 | 719 | 1723 |
+| headful-md | chars | 1120 | 1068.14 | 703 | 1690 |
+| headful-md | tokens | 334 | 383.14 | 245 | 666 |
+| headful-md | renderTimeMs | 0.13 | 0.14 | 0.06 | 0.25 |
 | headful-md | actionable | 1 | 1.29 | 0 | 4 |
 
 ## Takeaways
 
-- ax-tree uses 2100.7% more tokens than readable-ui on average across 6 scenarios (mean sizeRatio 22.01).
-- headful-md uses 68.7% fewer tokens than readable-ui on average across 6 scenarios (mean sizeRatio 0.31).
+- ax-tree uses 2148.9% more tokens than readable-ui across 6 scenarios (mean sizeRatio 22.49, median 24.88).
+- headful-md uses 68.7% fewer tokens than readable-ui across 6 scenarios (mean sizeRatio 0.31, median 0.35).
 - readable-ui skipped 1 scenario(s): home (no .md envelope route).

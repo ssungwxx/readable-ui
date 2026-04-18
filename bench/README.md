@@ -4,8 +4,8 @@
 
 ## Latest baseline run
 
-- 실행: `2026-04-18T03-33-45-531Z` (스냅샷: [`results/baseline/`](./results/baseline/))
-- git: `5bd03ea`
+- 실행: `2026-04-18T05-04-18-922Z` (스냅샷: [`results/baseline/`](./results/baseline/))
+- git: `5a60c7c`
 - node: `v22.14.0`
 - chromium: `147.0.7727.15` (playwright v1217, CDP `Accessibility.getFullAXTree`)
 - warm-up: on (각 (scenario, transport) 쌍마다 1회 실행 후 2회차 측정)
@@ -14,25 +14,25 @@
 
 | scenario | readable-ui tokens | ax-tree tokens | headful-md tokens | ax-tree sizeRatio | headful-md sizeRatio | readable-ui actionable | ax-tree actionable | headful-md actionable |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| home | n/a | 15,968 | 305 | — | — | — | 12 | 0 |
-| dashboard | 793 | 20,361 | 334 | 25.68 | 0.42 | 5 | 11 | 1 |
-| users | 1,494 | 34,063 | 425 | 22.80 | 0.28 | 13 | 29 | 4 |
-| user-detail | 907 | 21,921 | 271 | 24.17 | 0.30 | 3 | 10 | 3 |
-| reports | 1,197 | 33,358 | 526 | 27.87 | 0.44 | 8 | 15 | 1 |
-| audit | 13,164 | 27,794 | 425 | 2.11 | 0.03 | 5 | 17 | 0 |
-| jobs | 608 | 17,885 | 245 | 29.42 | 0.40 | 0 | 12 | 0 |
+| home | n/a | 15,991 | 312 | — | — | — | 12 | 0 |
+| dashboard | 793 | 20,359 | 334 | 25.67 | 0.42 | 5 | 11 | 1 |
+| users | 1,494 | 34,060 | 425 | 22.80 | 0.28 | 13 | 29 | 4 |
+| user-detail | 927 | 22,328 | 275 | 24.09 | 0.30 | 3 | 10 | 3 |
+| reports | 1,504 | 46,406 | 666 | 30.86 | 0.44 | 8 | 15 | 1 |
+| audit | 13,164 | 27,813 | 425 | 2.11 | 0.03 | 5 | 17 | 0 |
+| jobs | 608 | 17,880 | 245 | 29.41 | 0.40 | 0 | 12 | 0 |
 
 ### Across-scenario summary
 
 | transport | tokens median | tokens mean | tokens min | tokens max | actionable median | actionable mean |
 |---|---:|---:|---:|---:|---:|---:|
-| readable-ui | 1,052 | 3,027 | 608 | 13,164 | 5 | 5.67 |
-| ax-tree | 21,921 | 24,479 | 15,968 | 34,063 | 12 | 15.14 |
-| headful-md | 334 | 362 | 245 | 526 | 1 | 1.29 |
+| readable-ui | 1,211 | 3,082 | 608 | 13,164 | 5 | 5.67 |
+| ax-tree | 22,328 | 26,405 | 15,991 | 46,406 | 12 | 15.14 |
+| headful-md | 334 | 383 | 245 | 666 | 1 | 1.29 |
 
 ### Takeaways (auto-computed)
 
-- **ax-tree vs readable-ui**: 평균 sizeRatio 22.01 (산술평균), 중앙값 24.17 — `audit` 시나리오 (sizeRatio 2.11) 가 평균을 끌어내리므로 **중앙값 쪽이 실제 비대칭을 더 정직하게 반영**한다. `home`·`audit` 을 제외한 5 시나리오 기준 단순 평균은 25.99.
+- **ax-tree vs readable-ui**: 평균 sizeRatio 22.49 (산술평균), 중앙값 24.88 — `audit` 시나리오 (sizeRatio 2.11) 가 평균을 끌어내리므로 **중앙값 쪽이 실제 비대칭을 더 정직하게 반영**한다. `home`·`audit` 을 제외한 5 시나리오 기준 단순 평균은 26.57.
 - **headful-md vs readable-ui**: 평균 sizeRatio 0.31 (약 69% 감소). 단, actionable 중앙값이 1 로 심각히 낮아 "정보는 작지만 액션도 잃었다" 는 해석이 맞다. `users` 라우트에서도 ax-tree 가 뽑아낸 29개 interactive 중 4개만 복원. 즉 토큰 감소는 **정보 손실 비용으로 얻은 것**.
 - **`audit` 시나리오**: readable-ui 쪽도 payload-heavy 240 rows 때문에 13k 토큰. sizeRatio 가 가장 낮게 나오는 이유 (ADR 0022 Table payload 결정의 비용). 평균 수치에 단독으로 크게 영향을 주는 outlier — per-scenario 표와 함께 읽어야 한다.
 - **home (`/`)** 은 `readable-ui` 런너에 미적용 — envelope/`.md` 라우트 없음. spec §4.2 의 명시적 예외.

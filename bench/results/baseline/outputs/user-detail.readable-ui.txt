@@ -16,10 +16,14 @@ nav:
       href: /audit
     - label: Reports
       href: /reports
+breadcrumb:
+  - label: Users
+    href: /users
+  - label: Alice Example
 paths:
   view: /users/u_alice_01
   markdown: /users/u_alice_01.md
-updatedAt: 2026-04-18T03:33:39.073Z
+updatedAt: 2026-04-18T05:04:12.283Z
 tools:
   - name: listUsers
     title: List users
@@ -80,7 +84,7 @@ extensions:
 - [Audit log](/audit)
 - [Reports](/reports)
 
-[← Back to Users](/users)
+[Users](/users) › Alice Example
 
 # Alice Example
 
