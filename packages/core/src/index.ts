@@ -204,6 +204,73 @@ export function renderMarkdown(
   return serializeTree(nodes);
 }
 
+/**
+ * ADR 0022 §2 — Serialize a row collection as JSONL (one JSON object per line).
+ *
+ * Throws on schema drift to avoid silent payload/columns mismatch:
+ * - Each row must be a plain object with `id` field.
+ * - The set of keys on every row must equal `keys` exactly (no extras, no missing).
+ * - Values must be JSON primitives (string / number / boolean / null) — v1 limit.
+ *
+ * The trailing newline is included so the fenced block's last line is terminated.
+ */
+export function serializeJsonlPayload(
+  rows: readonly Record<string, unknown>[],
+  keys: readonly string[]
+): string {
+  if (!keys.includes("id")) {
+    throw new Error(
+      `serializeJsonlPayload: 'id' must be present in keys. See docs/adr/0022.`
+    );
+  }
+  const expected = new Set(keys);
+  const lines: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (row == null || typeof row !== "object" || Array.isArray(row)) {
+      throw new Error(
+        `serializeJsonlPayload: row[${i}] must be a plain object. See docs/adr/0022 §2.`
+      );
+    }
+    const got = new Set(Object.keys(row));
+    for (const k of expected) {
+      if (!got.has(k)) {
+        throw new Error(
+          `serializeJsonlPayload: row[${i}] missing required key "${k}". Payload keys must equal columns ∪ {id}. See docs/adr/0022 §2.`
+        );
+      }
+    }
+    for (const k of got) {
+      if (!expected.has(k)) {
+        throw new Error(
+          `serializeJsonlPayload: row[${i}] has extra key "${k}" not in columns. Payload keys must equal columns ∪ {id}. See docs/adr/0022 §2.`
+        );
+      }
+    }
+    // Build object with deterministic key order matching `keys`.
+    const ordered: Record<string, unknown> = {};
+    for (const k of keys) {
+      const v = (row as Record<string, unknown>)[k];
+      if (
+        v !== null &&
+        typeof v !== "string" &&
+        typeof v !== "number" &&
+        typeof v !== "boolean"
+      ) {
+        throw new Error(
+          `serializeJsonlPayload: row[${i}].${k} must be a JSON primitive (string/number/boolean/null). Got ${typeof v}. v1 does not support nested values. See docs/adr/0022 §2.`
+        );
+      }
+      ordered[k] = v;
+    }
+    lines.push(JSON.stringify(ordered));
+  }
+  // ADR 0022 §2: include trailing newline so each JSONL record (including the last)
+  // is newline-terminated — matches RFC 7464 / `jq -c` / `head|tail` style consumers.
+  // Empty rows → `""` (no trailing newline) so the empty case stays a no-op.
+  return lines.length === 0 ? "" : lines.join("\n") + "\n";
+}
+
 const DEFAULT_CONVENTIONS: Record<string, string> = {
   "duplicate-button-link": "dual-render",
   "form-inner-button-action": "inherit",

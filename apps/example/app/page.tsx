@@ -44,6 +44,13 @@ const routes: SampleRoute[] = [
     layout: "sidebar",
     blurb: "Background jobs — empty state and 5-stage status palette fixture.",
   },
+  {
+    href: "/users/u_alice_01",
+    mdHref: "/users/u_alice_01.md",
+    title: "User detail (Alice)",
+    layout: "detail",
+    blurb: "Single-resource view — back nav, profile + meta rail, footer destructive action.",
+  },
 ];
 
 export default function Home() {

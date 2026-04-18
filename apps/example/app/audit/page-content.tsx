@@ -21,50 +21,63 @@ interface AuditRow extends Record<string, unknown> {
   ip: string;
 }
 
-const events: AuditRow[] = [
-  {
-    id: "evt_9f2a",
-    when: "2026-04-18 05:42",
-    actor: "alice@example.com",
-    action: "updateUser",
-    target: "u_bob_01",
-    ip: "10.0.14.22",
-  },
-  {
-    id: "evt_9e71",
-    when: "2026-04-18 05:18",
-    actor: "alice@example.com",
-    action: "deleteUser",
-    target: "u_legacy_07",
-    ip: "10.0.14.22",
-  },
-  {
-    id: "evt_9d03",
-    when: "2026-04-18 02:01",
-    actor: "system",
-    action: "rotateKey",
-    target: "api-key-eu",
-    ip: "—",
-  },
-  {
-    id: "evt_9c88",
-    when: "2026-04-17 23:47",
-    actor: "carol@example.com",
-    action: "exportReport",
-    target: "reports/weekly",
-    ip: "203.0.113.14",
-  },
-  {
-    id: "evt_9c11",
-    when: "2026-04-17 18:04",
-    actor: "alice@example.com",
-    action: "createUser",
-    target: "u_dave_02",
-    ip: "10.0.14.22",
-  },
+// ADR 0022 fixture: data-heavy table demonstrating mode="payload" + readable-ui:data JSONL.
+// We deterministically synthesize 240 rows so the page exceeds the 200-row threshold
+// flagged in ADR 0015 §6 / Open Decision #9.
+const ACTORS = [
+  "alice@example.com",
+  "bob@example.com",
+  "carol@example.com",
+  "system",
 ];
+const ACTIONS = [
+  "updateUser",
+  "deleteUser",
+  "createUser",
+  "rotateKey",
+  "exportReport",
+];
+const IPS = ["10.0.14.22", "203.0.113.14", "198.51.100.7", "—"];
 
-const PAGE_SIZE = 25;
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function makeAuditEvents(count: number): AuditRow[] {
+  const events: AuditRow[] = [];
+  // Walk backwards from 2026-04-18 05:42 in 12-minute steps, deterministic.
+  const baseEpoch = Date.UTC(2026, 3, 18, 5, 42, 0);
+  for (let i = 0; i < count; i++) {
+    const t = new Date(baseEpoch - i * 12 * 60 * 1000);
+    const yyyy = t.getUTCFullYear();
+    const mm = pad2(t.getUTCMonth() + 1);
+    const dd = pad2(t.getUTCDate());
+    const hh = pad2(t.getUTCHours());
+    const mi = pad2(t.getUTCMinutes());
+    const actor = ACTORS[i % ACTORS.length] ?? "system";
+    const action = ACTIONS[(i * 3) % ACTIONS.length] ?? "updateUser";
+    const ip = IPS[(i * 5) % IPS.length] ?? "10.0.14.22";
+    const target =
+      action === "rotateKey"
+        ? `api-key-${["eu", "us", "ap"][i % 3]}`
+        : action === "exportReport"
+          ? `reports/${["weekly", "monthly", "ad-hoc"][i % 3]}`
+          : `u_${["alice", "bob", "carol", "dave", "legacy"][i % 5]}_${pad2((i % 12) + 1)}`;
+    events.push({
+      id: `evt_${(0xa000 + i).toString(16)}`,
+      when: `${yyyy}-${mm}-${dd} ${hh}:${mi}`,
+      actor,
+      action,
+      target,
+      ip,
+    });
+  }
+  return events;
+}
+
+const events: AuditRow[] = makeAuditEvents(240);
+
+const PAGE_SIZE = 240;
 const TOTAL_ROWS = 312;
 const CURRENT_PAGE = 1;
 const TOTAL_PAGES = Math.ceil(TOTAL_ROWS / PAGE_SIZE);
@@ -162,7 +175,11 @@ export function AuditPage() {
         total={TOTAL_ROWS}
         sort={CURRENT_SORT}
         filter={ACTIVE_FILTER}
-        mode="summary"
+        // ADR 0022 §4: opt in to payload mode — visible head 5 rows in the GFM
+        // pipe table, full 240-row dataset emitted as a fenced ```readable-ui:data```
+        // JSONL block inside the same `:::table{...}` directive container.
+        mode="payload"
+        payloadHead={5}
         columns={[
           { key: "when", label: "When" },
           { key: "actor", label: "Actor" },

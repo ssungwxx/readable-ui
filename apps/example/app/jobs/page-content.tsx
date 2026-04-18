@@ -79,7 +79,11 @@ export function JobsPage() {
         {`Currently showing jobs filtered to status="${FILTER_STATUS}". No error jobs are present.`}
       </Alert>
 
-      {/* rows=[] + empty not "silent" → auto Alert(kind=note) appended in toMarkdown */}
+      {/*
+        ADR 0020 §4: author already supplies a contextual Alert(kind=note) above; opt out of
+        the engine fallback with `empty="silent"` so the same "no results" signal is not
+        duplicated. (See ADR 0020 §4 "Author-supplied Alert pattern".)
+      */}
       <Table<Job>
         tool="listJobs"
         filter={{ status: FILTER_STATUS }}
@@ -90,6 +94,7 @@ export function JobsPage() {
           { key: "startedAt", label: "Started" },
         ]}
         rows={filteredJobs}
+        empty="silent"
       />
 
       {/* Also show all jobs with 5-stage palette for ADR 0020 §6 completeness */}

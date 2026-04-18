@@ -2,7 +2,7 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md), [ADR 0021](../adr/0021-detail-page-layout.md)
 
 ## 구조
 
@@ -87,8 +87,11 @@ nav:
 | `flow` | 세로 1차원 흐름 (default) | ADR 0007 |
 | `sidebar` | 좌측 수직 네비 + 우측 본문 | ADR 0011 |
 | `topbar` | 상단 수평 네비 + 하단 본문 | ADR 0011 |
+| `detail` | 한 리소스의 상세 페이지 (back nav + main + meta rail + footer actions) | ADR 0021 |
 
 `sidebar`/`topbar` 선택 시 `<Page>` 에 `nav` prop으로 `{label, href, active?}[]` 전달. 좌/위 차이는 시각 전용이며 Markdown 직렬화는 동일 — body 맨 앞에 `## Navigation` + unordered 링크 리스트로 flush한다. 배치 정보는 버리지만 정보 손실은 없다 (ADR 0007 §4 flush 원칙). 상세는 [component-catalog.md §Page](./component-catalog.md#page).
+
+`detail` 선택 시 `<Page>` 에 추가 prop `back?: { label, href }` · `meta?: ReactNode` · `footer?: ReactNode` 를 사용한다. Markdown 직렬화 순서는 `nav → back → main(children) → meta → footer` 단일 세로 flush — 우측 rail 의 시각 배치 정보는 버리지만 정보 손실은 없다. 본문 정규형은 ADR 0018 단건 상세 관용구 (Card + List + Strong) 와 ADR 0019 destructive 2단계 confirm 페이지 (Card + Alert + Form) 양쪽이 detail layout 위에 얹힌다.
 
 envelope `layout` 과 `<Page layout>` prop은 일치시키는 것이 권장. 불일치 시 warning.
 
@@ -259,7 +262,7 @@ AI가 tool 호출 인자를 추출할 때는 **셀 텍스트가 아니라 action
 
 ## 미정 / 후속 결정
 
-- **Layout 카탈로그 전체 값** — 현재 `flow`·`sidebar`·`topbar` (ADR 0011). `tabs-page`, `split-page`, `detail` 등은 후속 ADR 대상
+- **Layout 카탈로그 전체 값** — 현재 `flow`·`sidebar`·`topbar`·`detail` (ADR 0011 / ADR 0021). `tabs-page`, `split-page` 등은 후속 ADR 대상
 - **외부 스키마 참조** (`$ref`, `include: ./tools.yaml`) — 초기 비지원
 - **Permission 모델 확장** — 단순 역할 기반 `role`만
 - **Multipart envelope** (탭 내부 서브페이지) — 초기 비지원

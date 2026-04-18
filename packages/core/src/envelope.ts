@@ -53,7 +53,7 @@ export const EnvelopeToolZ = z.object({
   constraints: z.array(ConstraintZ).optional(),
 });
 
-export const PageLayoutZ = z.enum(["flow", "sidebar", "topbar"]);
+export const PageLayoutZ = z.enum(["flow", "sidebar", "topbar", "detail"]);
 export type PageLayout = z.infer<typeof PageLayoutZ>;
 
 export const NavItemZ = z.object({
@@ -77,6 +77,10 @@ export const EnvelopeZ = z
     title: z.string().min(1),
     purpose: z.string().optional(),
     role: z.union([z.string(), z.array(z.string())]).optional(),
+    /** ADR 0020 §5 (+ research llm-test-0020 Gap B): envelope-level intent marker — placed
+     * adjacent to purpose/role so YAML serialization surfaces it in the high-priority header,
+     * not buried after `tools:`. */
+    intent: z.enum(["destructive-confirm"]).optional(),
     layout: PageLayoutZ.optional(),
     nav: NavZ.optional(),
     paths: PathsZ.optional(),
@@ -85,8 +89,6 @@ export const EnvelopeZ = z
     updatedAt: z.string().optional(),
     tools: z.array(EnvelopeToolZ).optional(),
     extensions: z.record(z.string(), z.unknown()).optional(),
-    /** ADR 0020 §5: envelope-level intent marker for destructive confirm pages */
-    intent: z.enum(["destructive-confirm"]).optional(),
   })
   .strict();
 

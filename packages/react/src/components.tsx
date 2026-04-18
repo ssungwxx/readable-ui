@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { defineDualComponent } from "./index.js";
-import type {
-  MdNode,
-  Nav,
-  NavItem as EnvelopeNavItem,
-  PageLayout,
-  SerializeContext,
+import {
+  serializeJsonlPayload,
+  type MdNode,
+  type Nav,
+  type NavItem as EnvelopeNavItem,
+  type PageLayout,
+  type SerializeContext,
 } from "@readable-ui/core";
 
 function asText(children: ReactNode): string {
@@ -41,9 +42,20 @@ function buildActionURI(
 
 export type NavItem = EnvelopeNavItem;
 
+export interface DetailBackLink {
+  label: string;
+  href: string;
+}
+
 export interface PageProps {
   layout?: PageLayout;
   nav?: NavItem[];
+  /** ADR 0021 §2: detail layout — back link rendered above the title */
+  back?: DetailBackLink;
+  /** ADR 0021 §2: detail layout — right-side meta rail (HTML); flushed after main in Markdown */
+  meta?: ReactNode;
+  /** ADR 0021 §2: detail layout — bottom action area (HTML); flushed after meta in Markdown */
+  footer?: ReactNode;
   children: ReactNode;
 }
 
@@ -58,6 +70,25 @@ function resolveNav(
     return { items: propNav, scope: "global" };
   }
   return null;
+}
+
+function renderBackLinkMarkdown(back: DetailBackLink): MdNode[] {
+  // ADR 0021 §3: single paragraph "← Back to <label>" link, body 맨 앞 (nav 가 있으면 nav 뒤).
+  // 텍스트 리터럴 "← " (U+2190 + space) + "Back to " + label 고정. 영어 single-source.
+  return [
+    {
+      type: "paragraph",
+      children: [
+        {
+          type: "link",
+          url: back.href,
+          children: [
+            { type: "text", value: `\u2190 Back to ${back.label}` } as MdNode,
+          ] as never,
+        } as MdNode,
+      ] as never,
+    } as MdNode,
+  ];
 }
 
 function renderNavMarkdown(nav: NavItem[], scope: "global" | "section"): MdNode[] {
@@ -122,7 +153,42 @@ function BrandMark() {
 
 export const Page = defineDualComponent<PageProps>({
   name: "page",
-  render: ({ layout = "flow", nav, children }) => {
+  render: ({ layout = "flow", nav, back, meta, footer, children }) => {
+    if (layout === "detail") {
+      // ADR 0021 §2: 3-area shell — header(back+title slot) / body grid (main + meta) / footer.
+      // children 의 첫 Heading level=1 은 자동으로 헤더 영역에 시각 분리되지 않음 — children flow 가
+      // main column 으로 직진. back/meta/footer 는 Page prop 으로만 들어온다.
+      return (
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+          <div className="mx-auto w-full max-w-5xl px-6 py-8">
+            {back ? (
+              <header className="mb-6">
+                <a
+                  href={back.href}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+                >
+                  <span aria-hidden="true">&larr;</span>
+                  <span>Back to {back.label}</span>
+                </a>
+              </header>
+            ) : null}
+            <div className={meta ? "grid gap-8 md:grid-cols-[minmax(0,1fr)_18rem]" : ""}>
+              <main className="min-w-0 space-y-6">{children}</main>
+              {meta ? (
+                <aside className="space-y-4 md:pt-1 md:border-l md:border-slate-200/70 md:pl-8">
+                  {meta}
+                </aside>
+              ) : null}
+            </div>
+            {footer ? (
+              <footer className="mt-10 border-t border-slate-200/70 pt-6 space-y-4">
+                {footer}
+              </footer>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
     if (layout === "sidebar" && nav && nav.length > 0) {
       return (
         <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -201,11 +267,22 @@ export const Page = defineDualComponent<PageProps>({
       <main className="mx-auto max-w-4xl px-6 py-10 space-y-6">{children}</main>
     );
   },
-  toMarkdown: ({ nav: propNav, children }, ctx) => {
-    const body = ctx.walk(children);
+  toMarkdown: ({ layout: propLayout, nav: propNav, back, meta, footer, children }, ctx) => {
+    // ADR 0021 §3: order = nav → back → main(children) → meta → footer.
+    // ADR 0021 §6 / §2: back/meta/footer are detail-layout-only props. Guard the serializer
+    // so that authors who pass them under flow/sidebar/topbar do not leak detail-shell
+    // markup into unrelated layouts (silent ignore — symmetric with HTML render).
+    const effectiveLayout = ctx.envelope?.layout ?? propLayout ?? "flow";
+    const isDetail = effectiveLayout === "detail";
+    const main = ctx.walk(children);
+    const metaNodes = isDetail && meta != null ? ctx.walk(meta) : [];
+    const footerNodes = isDetail && footer != null ? ctx.walk(footer) : [];
+    const backNodes = isDetail && back ? renderBackLinkMarkdown(back) : [];
     const resolved = resolveNav(propNav, ctx.envelope?.nav);
-    if (!resolved) return body;
-    return [...renderNavMarkdown(resolved.items, resolved.scope), ...body];
+    const navNodes = resolved
+      ? renderNavMarkdown(resolved.items, resolved.scope)
+      : [];
+    return [...navNodes, ...backNodes, ...main, ...metaNodes, ...footerNodes];
   },
 });
 
@@ -927,10 +1004,28 @@ export interface TableProps<R extends { id: string | number }> {
   size?: number;
   total?: number;
   sort?: string;
-  mode?: "summary";
+  /**
+   * ADR 0015 §6 ("summary") + ADR 0022 §4 ("payload"). Mutually exclusive single enum.
+   * - "summary": visible head N rows + footer "View all N rows" link when rows.length < total.
+   * - "payload": visible head `payloadHead` rows + fenced ` ```readable-ui:data ` JSONL of full rows
+   *   (or `payload` prop when split-source) inside the `:::table{...}` directive container.
+   */
+  mode?: "summary" | "payload";
   filter?: Record<string, string | number | boolean>;
   /** ADR 0020 §4: set to "silent" to suppress the auto-injected fallback Alert when rows is empty */
   empty?: "silent";
+  /**
+   * ADR 0022 §2: explicit full-row source for `mode="payload"` JSONL output.
+   * When omitted in payload mode, `rows` itself is used as the payload source
+   * (i.e. `rows` is both the visible-head source and the full payload).
+   * Keys must match `columns[].key ∪ {"id"}` exactly — drift throws at toMarkdown.
+   */
+  payload?: R[];
+  /**
+   * ADR 0022 §4: number of head rows kept in the visible GFM pipe table when `mode="payload"`.
+   * Default 5. `0` is allowed (payload-only output, no visible preview rows).
+   */
+  payloadHead?: number;
 }
 
 type AnyRow = { id: string | number; [k: string]: unknown };
@@ -957,6 +1052,8 @@ function mergeFilterIntoParams(
   return out;
 }
 
+const DEFAULT_PAYLOAD_HEAD = 5;
+
 const TableImpl = defineDualComponent<TableProps<AnyRow>>({
   name: "table",
   render: ({
@@ -973,7 +1070,15 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
     sort,
     mode,
     filter,
+    payloadHead,
   }) => {
+    // ADR 0022 §5: HTML render is unaffected by payload mode — full rows are still
+    // shown as a regular table. The fenced JSONL only appears in .md output.
+    // We do honour `payloadHead` for visual head trimming when explicitly opted in.
+    const visibleRows =
+      mode === "payload"
+        ? rows.slice(0, payloadHead ?? DEFAULT_PAYLOAD_HEAD)
+        : rows;
     const parsedSort = parseSort(sort);
     const filterEntries = filter ? Object.entries(filter) : [];
     const sortLinkForCol = (colKey: string): string | null => {
@@ -1095,7 +1200,7 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((r, idx) => (
+              {visibleRows.map((r, idx) => (
                 <tr
                   key={String(r.id)}
                   data-rui-id={String(r.id)}
@@ -1217,11 +1322,21 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       mode,
       filter,
       empty,
+      payload,
+      payloadHead,
     },
     ctx
   ) => {
     if (tool) ctx.registerAction(tool);
     for (const a of actions) ctx.registerAction(a.tool);
+
+    // ADR 0022 §4: payload mode trims the visible GFM table to head N rows.
+    // The full payload (or `payload` prop when split-source) is emitted as a
+    // fenced ```readable-ui:data``` JSONL child of the directive container.
+    const visibleRowsForMd =
+      mode === "payload"
+        ? rows.slice(0, payloadHead ?? DEFAULT_PAYLOAD_HEAD)
+        : rows;
 
     // ADR 0020 §3: collect enum sets for auto CodeSpan wrap
     // Condition (a): _filter_<col>.enum from the tool's input schema
@@ -1276,7 +1391,7 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
       ] as never,
     };
 
-    const bodyRows: MdNode[] = rows.map((r) => {
+    const bodyRows: MdNode[] = visibleRowsForMd.map((r) => {
       const actionChildren: MdNode[] = actions.flatMap((a, i) => {
         const url = buildActionURI(a.tool, a.params(r));
         const link: MdNode = {
@@ -1354,6 +1469,26 @@ const TableImpl = defineDualComponent<TableProps<AnyRow>>({
     }
 
     const childrenNodes: MdNode[] = [innerTable];
+
+    // ADR 0022 §3: in payload mode, append a fenced `readable-ui:data` JSONL block
+    // as a child of the `:::table{...}` directive container. The JSONL source is
+    // `payload ?? rows`. Schema drift (missing/extra keys, non-primitive values)
+    // throws inside `serializeJsonlPayload`.
+    if (mode === "payload") {
+      const payloadSource = (payload ?? rows) as Record<string, unknown>[];
+      const keys = [
+        "id",
+        ...columns.map((c) => String(c.key)).filter((k) => k !== "id"),
+      ];
+      const value = serializeJsonlPayload(payloadSource, keys);
+      childrenNodes.push({
+        type: "code",
+        lang: "readable-ui:data",
+        meta: null,
+        value,
+      } as MdNode);
+    }
+
     if (mode === "summary" && tool && typeof total === "number" && rows.length < total) {
       const summaryUrl = buildActionURI(tool, {
         _page: 1,

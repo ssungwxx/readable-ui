@@ -106,6 +106,8 @@ Table `rows.length === 0` 이고 동일 컨테이너 (Page body 직속 또는 Ca
 
 **옵트아웃**: `<Table empty="silent">` prop 으로 fallback 비활성. 저자가 의도적으로 빈 표만 보이고 싶은 경우 (예: 데이터 미수신을 명시적으로 표현하지 않는 dashboard placeholder).
 
+**Author-supplied Alert pattern**: 저자가 Table 의 형제 (또는 동일 컨테이너 내 인접) 위치에 직접 `Alert{kind=note}` 를 두는 경우 — 예컨대 현재 적용된 필터 값을 함께 안내하는 풍부한 메시지 — 엔진은 v1 에서 형제 검사를 수행하지 않으므로 fallback 이 자동으로 silent 되지 않는다 (mdast 노드 직렬화 시점에 형제 컨텍스트 접근 비용이 큼). 따라서 저자가 자기 Alert 을 두려면 동일 Table 에 `empty="silent"` 를 함께 선언해야 한다 — 두 신호가 한 쌍으로 작동한다 (저자 Alert 제공 ↔ 엔진 fallback opt-out). v2 에서 형제 검사 자동화 후 본 권고는 폐기 검토.
+
 **ADR 0019 §2 "엔진 자동 placeholder 삽입 없음" 과의 관계**: ADR 0019 는 "Table directive 내부에 placeholder 행을 삽입하지 않는다" 의 의미였다. 본 ADR 은 **directive 외부의 형제 Alert** 을 fallback 으로 삽입하므로 directive 내부의 schema inspection 가치는 그대로 보존된다. 즉 ADR 0019 §2 의 "스키마 inspection 가치 유지" 약속은 본 결정에 의해 깨지지 않는다.
 
 **lint 와의 관계**: research Gap III 권고 1번의 dev-time lint warning 은 본 ADR 의 fallback 이 활성일 때 불필요하나, `empty="silent"` 옵트아웃 사용 시에도 형제 Alert 부재면 warning 발생을 후속 lint ADR 에서 검토.

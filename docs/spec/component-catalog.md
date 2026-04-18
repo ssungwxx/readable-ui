@@ -2,7 +2,7 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0022](../adr/0022-table-payload-fenced.md)
 
 ## 카탈로그 밖은 전부 금지
 
@@ -13,15 +13,18 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 ### Page
 
-페이지의 최상위 쉘. `layout`·`nav`는 **props**로 받는다 (카탈로그 확장이 아님 — ADR 0011).
+페이지의 최상위 쉘. `layout`·`nav`·detail 전용 prop(`back`/`meta`/`footer`)은 **props**로 받는다 (카탈로그 확장이 아님 — ADR 0011, ADR 0021).
 
 - Markdown: envelope YAML 뒤에 이어지는 body. nav가 있으면 body 맨 앞에 `## Navigation` (scope=section일 때 `## Section navigation`) 섹션 flush.
 - **nav 우선순위** (ADR 0014): envelope `nav.items` > Page prop `nav` > (없음). 둘 다 주어지면 envelope 우선 + 불일치 시 warning. 신규 작성 시 envelope에 선언 권장.
-- HTML: `layout` 값에 따라 `<main>` 또는 `<aside>+<main>` / `<header>+<main>` 쉘 분기.
+- HTML: `layout` 값에 따라 `<main>` 또는 `<aside>+<main>` / `<header>+<main>` / detail 3영역 (header + body grid + footer) 쉘 분기.
 - Props:
-  - `layout?: "flow" | "sidebar" | "topbar"` — envelope `layout`과 일치해야 함 (불일치 시 warning, 미선언 시 `flow`)
+  - `layout?: "flow" | "sidebar" | "topbar" | "detail"` — envelope `layout`과 일치해야 함 (불일치 시 warning, 미선언 시 `flow`)
   - `nav?: NavItem[]` — `NavItem = { label: string; href: string; active?: boolean }` (하위호환, envelope `nav.items` 사용 권장)
-  - `children: block nodes`
+  - `back?: { label: string; href: string }` — detail layout 전용. main 위에 `← Back to <label>` 링크 1개 (ADR 0021 §2)
+  - `meta?: ReactNode` — detail layout 전용. 우측 rail (HTML); Markdown 은 main 뒤로 flush (ADR 0021 §3)
+  - `footer?: ReactNode` — detail layout 전용. 하단 액션 영역 (HTML); Markdown 은 meta 뒤로 flush
+  - `children: block nodes` — main column 본문
 - 직렬화 예 (layout=sidebar, nav 3개):
   ```markdown
   ## Navigation
@@ -32,11 +35,40 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
   <body blocks>
   ```
+- 직렬화 예 (layout=detail, back + meta + footer):
+  ```markdown
+  ## Navigation
+
+  - [Users](/users) · current
+
+  [← Back to Users](/users)
+
+  # Alice Example
+
+  :::card{title=Profile}
+  - **Email**: alice@example.com
+  - **Role**: admin
+  :::
+
+  :::card{title=Details}
+  - **Created**: 2026-04-12
+  - **Status**: `active`
+  :::
+
+  :::form{action=deleteUserPreview}
+  ::input{type=hidden name=id default=u_alice_01}
+
+  ::button[Delete…]{variant=danger}
+  :::
+  ```
 - 규약:
   - `active: true` 항목은 링크 뒤 ` · current` suffix. 다수 허용, 1개 권장.
   - heading은 `##` 고정, 텍스트는 `Navigation` 고정 (i18n v2).
-  - 좌/위 배치 차이는 시각 전용 — Markdown 출력 동일.
+  - 좌/위/detail rail 배치 차이는 시각 전용 — Markdown 출력 동일.
   - `nav`가 비어 있거나 `layout="flow"` 면 prepend 없음 — `flow` 와 완전히 동일한 body 출력.
+  - detail layout 의 직렬화 순서 고정: `nav → back → main(children) → meta → footer` (ADR 0021 §3). main 뒤 meta 순은 "주 내용 우선" 원칙 — 상세 페이지 진입 직후 첫 토큰에 주 내용이 들어가도록.
+  - back link 텍스트는 `← Back to <label>` (U+2190 + space + "Back to " + label) 영어 single-source 고정. i18n v2.
+  - `back`/`meta`/`footer` 를 `layout!=="detail"` 에서 전달해도 무음 무시 (warning 아님). v2 lint 검토.
 
 ## Atomic
 
@@ -121,7 +153,25 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 - Markdown: ` ```lang\ncode\n``` `
 - HTML: `<pre><code class="language-...">`
 - Props: `language?: string`, `meta?: string`, `children: string`
-- Note: `language`가 `readable-ui:actions`, `readable-ui:data` 등일 때 envelope 확장 용도 (후속 spec).
+- Note: `language` 가 `readable-ui:<subtype>` prefix 를 가지면 readable-ui 가 자기 의미를 부여하는 fenced payload 다. 본 카탈로그 §Fenced info string convention 참조.
+
+#### Fenced info string convention (ADR 0022)
+
+readable-ui 가 fenced code block 의 info string 으로 자기 의미를 표시할 때는 다음 단일 토큰 형식을 정본으로 한다:
+
+```
+readable-ui:<subtype>
+```
+
+CommonMark 0.30 §4.5 의 info string 정의를 그대로 따르며, 콜론(`:`) 은 단일 토큰 내부에서 허용된다. mdast `code.lang` 필드에 `"readable-ui:<subtype>"` 가 그대로 담긴다.
+
+**정본 키 (v1)**:
+
+| info string | 정의 ADR | 등장 위치 | payload 형식 |
+|---|---|---|---|
+| `readable-ui:data` | ADR 0022 | `:::table{... mode=payload}` 내부 자식 | JSONL — 줄당 한 JSON 객체 |
+
+`readable-ui:actions`, `readable-ui:filters`, `readable-ui:schema` 등 다른 subtype 은 v1 에 정의되지 않는다 — 후속 ADR 개별 결정. 본 prefix 자체는 ecosystem-grabbing 회피 + 짧은 namespace 의 trade-off 로 채택 (ADR 0022 §1 대안 평가).
 
 ## Container (자식 블록 flow)
 
@@ -180,16 +230,21 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
   - `total?: number` — total rows. `mode="summary"` 사용 시 권장 (footer "View all N rows" link 생성 기반).
   - `sort?: string` — `KEY:DIR` 단일 컬럼. `DIR`은 `asc|desc` (case-insensitive).
   - `filter?: Record<string, string>` — 필드별 equality. `{ status: "active", role: "admin" }` → `filter-status=active filter-role=admin`.
-  - `mode?: "summary"` — summary 모드에서 head N행만 직렬화. `rows.length < total`이면 footer에 `[View all N rows](mcp://tool/<tool>?_page=1&_size=<total>)` link 추가.
+  - `mode?: "summary" | "payload"` — 단일 enum (상호 배타).
+    - `"summary"` 는 head N행만 직렬화하고 `rows.length < total`이면 footer에 `[View all N rows](mcp://tool/<tool>?_page=1&_size=<total>)` link 추가.
+    - `"payload"` 는 head `payloadHead` 행만 visible GFM table 로 직렬화하고, **전체 rows (또는 명시 prop `payload`) 를 directive 내부 자식 fenced ` ```readable-ui:data ` JSONL 블록으로 함께 출력** (ADR 0022).
+  - `payload?: R[]` — `mode="payload"` 일 때 fenced JSONL 의 source. 미지정 시 `rows` 자체가 source. `rows` 는 시각 head 용, `payload` 는 전체 데이터 용으로 분리하고 싶을 때만 사용.
+  - `payloadHead?: number` — `mode="payload"` 에서 visible head row 개수. 기본 5. `0` 허용 (visible 표 없이 payload only — LLM 전용 축약).
 - 직렬화 규약:
   - `:::table{...}` container directive + 내부 GFM pipe table (`| id | ... |`).
   - id 열·actions 열 규칙은 변경 없음 (ADR 0009 §6).
   - actions 셀은 `[Label](mcp://tool/<tool>?<params>)` link-as-action만.
+  - `mode="payload"` 일 때 directive 자식 순서: visible pipe table → fenced `readable-ui:data` JSONL → (선택) footer link. payload JSONL 의 각 라인은 JSON object 한 개, `id` 필드 필수, key 집합은 `columns[].key ∪ {"id"}` 와 정확히 일치 (extra key 도 missing key 도 throw — ADR 0022 §2).
 - 엔진이 생성하는 action URI는 **시스템 예약 prefix `_`** 를 사용:
   - `_page`, `_size`, `_sort`, `_filter_<field>` — tool 자체 param과 충돌 방지.
   - 헤더 컬럼 클릭 = 현재 `filter`/`size` 유지, `_sort=<key>:<dir>` 토글, `_page=1` 리셋.
   - 페이지 이동 = 현재 `sort`/`filter`/`size` 유지, `_page=N`만 변경.
-- **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 시 warning — `readable-ui:data` fenced payload 분리 경로는 후속 ADR. 2열 transpose를 단건 상세 용도로 사용 금지 (ADR 0018).
+- **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 케이스는 `mode="payload"` + fenced `readable-ui:data` JSONL 로 분리 (ADR 0022). 2열 transpose를 단건 상세 용도로 사용 금지 (ADR 0018).
 - 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
 
 **`rows: []` 처리 (ADR 0019 §2 + ADR 0020 §4)**: 엔진은 directive 내부에 placeholder 행을 삽입하지 않는다. `total=0` attribute 명시 권장, 저자가 Table 형제 레벨에 `Alert{kind=note}`를 배치한다. 형제 Alert 부재 시 엔진이 기본 Alert(kind=note, "No results") 을 자동 삽입(directive 외부 형제 노드). `<Table empty="silent">` prop 으로 fallback 옵트아웃.
@@ -338,7 +393,7 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 
 1. **모든 directive 이름은 소문자 kebab-case**. multi-word는 `split`, `accordion`처럼 단일 단어 우선, 부득이한 경우 하이픈 (예: `::radio-group`은 v1에 없음).
 2. **속성 값 따옴표**: 공백/특수문자 포함 시 큰따옴표 필수. `{title="User management"}`.
-3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `empty`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. `type` attribute 의 enum 값은 컴포넌트별 고정 (Input: `text|email|password|number|url|date|datetime-local|tel|search|hidden` — ADR 0020 §1). Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
+3. **예약된 속성**: `action`, `name`, `required`, `label`, `variant`, `status`, `kind`, `cols`, `level`, `options`, `pattern`, `minlength`, `maxlength`, `rows`, `min`, `max`, `step`, `format`, `placeholder`, `multiple`, `tool`, `page`, `of`, `size`, `total`, `sort`, `mode`, `caption`, `value`, `checked`, `default`, `empty`, `payload`, `payloadhead`, `filter-*` (prefix)는 built-in 의미로 예약. 다른 용도로 overload 금지. `type` attribute 의 enum 값은 컴포넌트별 고정 (Input: `text|email|password|number|url|date|datetime-local|tel|search|hidden` — ADR 0020 §1). Action URI query string에서는 시스템 파라미터를 `_` prefix로 네임스페이스한다: `_page`, `_size`, `_sort`, `_filter_<field>` (ADR 0015 §3).
    JSX prop ↔ Markdown attribute 명명은 [ADR 0017](../adr/0017-jsx-markdown-attribute-naming.md) 참조.
 4. **엔티티 이스케이프**: directive content 안에서 `[`, `]`, `{`, `}`는 백슬래시 이스케이프.
 5. **Boolean attribute**: `required`, `multiple` 등은 값 없이 단독 출력. mdast attributes JSON에서는 `""` 값으로 표현 (`mdast-util-directive`의 `collapseEmptyAttributes`).
@@ -370,7 +425,6 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 
 ## 미정 / 후속
 
-- **데이터 헤비 Table**의 JSON payload 분리 규약 (200행+ 권장).
 - **info/success/error** alert 확장 — GFM 5종 외 추가 여부.
 - **Radio/Checkbox 그룹 컨테이너** — 현재 개별 directive. 그룹 필요성 재검토 대상.
 - **Media 컴포넌트** (Video, Audio) — v1 미포함.
