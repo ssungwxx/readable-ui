@@ -281,7 +281,11 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
   - 헤더 컬럼 클릭 = 현재 `filter`/`size` 유지, `_sort=<key>:<dir>` 토글, `_page=1` 리셋.
   - 페이지 이동 = 현재 `sort`/`filter`/`size` 유지, `_page=N`만 변경.
 - **제약**: rowspan/colspan/중첩 테이블 불가. 복수 sort, range/OR/NOT-EQ filter, 필드당 2개 이상 filter 값은 **v1 금지** — 필요 시 LLM이 새 tool call로 재표현. 200행 초과 케이스는 `mode="payload"` + fenced `readable-ui:data` JSONL 로 분리 (ADR 0022). 2열 transpose를 단건 상세 용도로 사용 금지 (ADR 0018).
-- 셀 내부 인라인만 허용 (Link, CodeSpan, Emphasis, Strong).
+- **셀 인라인 주입 규약 (ADR 0029)**: 셀 값은 primitive 로 강제 (`String(row[col.key])`). 인라인 노드는 아래 **engine-driven 경로** 로만 주입된다:
+  1. `columns[0]` (또는 `showIdColumn=true` 의 id 열) — 자동 CodeSpan wrap.
+  2. `actions[]` 가 생성하는 row-action Link (`mcp://tool/...`).
+  3. ADR 0020 §3 schema-driven enum 매칭 — tool input/output schema 의 enum 과 셀 값이 정확히 일치하면 CodeSpan 으로 wrap.
+- 저자 JSX 로 `<Link>` / `<CodeSpan>` / `<Emphasis>` / `<Strong>` 을 셀에 배치하는 것은 v1 에 지원되지 않으며 `[object Object]` 로 출력된다. 이러한 수요는 Table 형제 레벨에 별도 `<List>` 블록을 배치하는 관용구를 사용한다 (apps/example 의 home 페이지 `page-content.tsx` 참조).
 
 **`rows: []` 처리 (ADR 0019 §2 + ADR 0020 §4)**: 엔진은 directive 내부에 placeholder 행을 삽입하지 않는다. `total=0` attribute 명시 권장, 저자가 Table 형제 레벨에 `Alert{kind=note}`를 배치한다. 형제 Alert 부재 시 엔진이 기본 Alert(kind=note, "No results") 을 자동 삽입(directive 외부 형제 노드). `<Table empty="silent">` prop 으로 fallback 옵트아웃.
 
