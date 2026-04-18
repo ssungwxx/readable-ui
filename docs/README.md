@@ -13,6 +13,7 @@
 - [Markdown 요소 → View/Event 매핑 조사](./research/markdown-elements.md)
 - [LLM 친화성 검증 — ADR 0011 레이아웃](./research/llm-test-0011-layouts.md)
 - [LLM 친화성 검증 — ADR 0015 Table container directive](./research/llm-test-0015-table-container.md)
+- [LLM 친화성 검증 — ADR 0025 Tier 3 컨테이너 컴포넌트](./research/llm-test-0025-tier3-containers.md)
 
 ## Specs
 
