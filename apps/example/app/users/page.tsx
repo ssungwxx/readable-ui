@@ -1,5 +1,3 @@
-import { UsersPage } from "./page-content";
+import { usersPage } from "./page-content";
 
-export default function Page() {
-  return <UsersPage />;
-}
+export default usersPage.Component;

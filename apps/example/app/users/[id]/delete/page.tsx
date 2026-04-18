@@ -1,4 +1,6 @@
-import { DeleteUserConfirmPage } from "./page-content";
+import { deleteUserPage } from "./page-content";
+
+const DeleteUser = deleteUserPage.Component;
 
 interface PageParams {
   params: Promise<{ id: string }>;
@@ -6,5 +8,5 @@ interface PageParams {
 
 export default async function Page({ params }: PageParams) {
   const { id } = await params;
-  return <DeleteUserConfirmPage id={id} />;
+  return <DeleteUser id={id} />;
 }

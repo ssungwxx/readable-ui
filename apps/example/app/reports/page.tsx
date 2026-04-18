@@ -1,5 +1,3 @@
-import { ReportsPage } from "./page-content";
+import { reportsPage } from "./page-content";
 
-export default function Page() {
-  return <ReportsPage />;
-}
+export default reportsPage.Component;

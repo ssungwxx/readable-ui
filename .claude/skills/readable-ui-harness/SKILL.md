@@ -51,6 +51,17 @@ ADR (docs/adr/**)
 - [ ] 관련 spec 파일들의 "결정 근거" 링크에 추가
 - [ ] 이전 ADR이 superseded면 status 변경 명시
 
+### Library helper (factory) 추가 — ADR 0026 이후
+
+헬퍼는 **카탈로그 엔트리가 아니므로** ADR 0007 닫힘 규칙을 우회한다. 단, 신규 추가 시 walker (ADR 0008) 와 envelope SSoT (ADR 0014) 전제를 건드리지 않아야 한다.
+
+- [ ] `packages/react/src/define-*.ts` 구현 + `src/index.ts` 재export
+- [ ] `packages/react/package.json` `scripts.build` / `scripts.dev` tsup entry 추가
+- [ ] 대응 ADR 신설 (`definePage` / `defineNav` 선례: ADR 0026)
+- [ ] 사용처 (`apps/example/**`) 마이그레이션 — 기존 저-레벨 API 는 계속 유효해야 함
+- [ ] React Context 를 통한 envelope 전달 금지 (ADR 0008 walker 미지원). `cloneElement` prop 주입 또는 `SerializeContext` 만 사용
+- [ ] byte-equal 유지 — `pnpm bench` 로 pre/post baseline 확인
+
 ## 3. Directive attribute 예약어
 
 built-in 의미로 예약된 속성 이름 — **다른 용도로 overload 금지**:

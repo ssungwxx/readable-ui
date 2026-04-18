@@ -11,8 +11,8 @@ import {
   Alert,
   Table,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { adminNav } from "../_shared/admin-nav";
 
 interface User extends Record<string, unknown> {
   id: string;
@@ -39,12 +39,13 @@ const TOTAL_PAGES = Math.ceil(TOTAL_ROWS / PAGE_SIZE);
 const ACTIVE_FILTER = { status: "active", role: "user" } as const;
 const CURRENT_SORT = "createdAt:desc";
 
-export const usersEnvelope: Envelope = {
+export const usersPage = definePage({
+  envelope: {
   title: "User management",
   purpose: "Admin page to list, create, update, and delete user accounts.",
   role: "admin",
   layout: "sidebar",
-  nav: { items: withActive("/users") },
+  nav: { items: adminNav.active("/users") },
   paths: {
     view: "/users",
     markdown: "/users.md",
@@ -141,11 +142,9 @@ export const usersEnvelope: Envelope = {
       },
     },
   ],
-};
-
-export function UsersPage() {
-  return (
-    <Page layout="sidebar" nav={withActive("/users")}>
+  },
+  render: () => (
+    <Page>
       <Heading level={1}>Users</Heading>
       <Paragraph>
         Manage users. Any change here is auditable. See the{" "}
@@ -216,5 +215,5 @@ export function UsersPage() {
         </Form>
       </Card>
     </Page>
-  );
-}
+  ),
+});

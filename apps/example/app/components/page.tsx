@@ -1,5 +1,3 @@
-import { ComponentsPage } from "./page-content";
+import { componentsPage } from "./page-content";
 
-export default function Page() {
-  return <ComponentsPage />;
-}
+export default componentsPage.Component;

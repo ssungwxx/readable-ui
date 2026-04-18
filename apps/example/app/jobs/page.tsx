@@ -1,5 +1,3 @@
-import { JobsPage } from "./page-content";
+import { jobsPage } from "./page-content";
 
-export default function Page() {
-  return <JobsPage />;
-}
+export default jobsPage.Component;

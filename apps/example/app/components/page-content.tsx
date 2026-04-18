@@ -15,11 +15,13 @@ import {
   Cell,
   CodeSpan,
 } from "@readable-ui/react/components";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { componentsEnvelope } from "./envelope";
 
-export function ComponentsPage() {
-  return (
-    <Page layout="sidebar" nav={withActive("/components")}>
+export const componentsPage = definePage({
+  envelope: componentsEnvelope,
+  render: () => (
+    <Page>
       <Heading level={1}>Tier 3 components</Heading>
       <Paragraph>
         Section, Steps, and Split introduced in ADR 0025. Compare with the{" "}
@@ -111,5 +113,5 @@ export function ComponentsPage() {
         </Split>
       </Section>
     </Page>
-  );
-}
+  ),
+});

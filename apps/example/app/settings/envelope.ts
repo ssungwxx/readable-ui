@@ -1,5 +1,5 @@
 import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { adminNav } from "../_shared/admin-nav";
 
 export const settingsEnvelope: Envelope = {
   title: "Settings — Tabs & Accordion demo",
@@ -7,7 +7,7 @@ export const settingsEnvelope: Envelope = {
     "Demonstrates Tabs (client-state tab switcher) and Accordion (collapsible panels) introduced in ADR 0025.",
   role: "admin",
   layout: "sidebar",
-  nav: { items: withActive("/settings") },
+  nav: { items: adminNav.active("/settings") },
   paths: {
     view: "/settings",
     markdown: "/settings.md",

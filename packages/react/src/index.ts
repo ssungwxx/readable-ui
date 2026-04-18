@@ -47,3 +47,9 @@ export type {
   NavScope,
   Nav,
 } from "@readable-ui/core";
+
+// ADR 0026 — DX layer. Reuses existing Page/renderPage; adds no catalog entries.
+export { definePage } from "./define-page.js";
+export type { DefinePageOptions, DefinedPage } from "./define-page.js";
+export { defineNav } from "./define-nav.js";
+export type { DefinedNav } from "./define-nav.js";

@@ -8,8 +8,8 @@ import {
   Button,
   Table,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { adminNav } from "../_shared/admin-nav";
 
 interface ActivityEvent extends Record<string, unknown> {
   id: string;
@@ -50,49 +50,48 @@ const recentActivity: ActivityEvent[] = [
   },
 ];
 
-export const dashboardEnvelope: Envelope = {
-  title: "Admin dashboard",
-  purpose:
-    "At-a-glance overview of the admin workspace — user counts, active sessions, recent activity.",
-  role: "admin",
-  layout: "topbar",
-  nav: { items: withActive("/dashboard") },
-  paths: {
-    view: "/dashboard",
-    markdown: "/dashboard.md",
-  },
-  updatedAt: "2026-04-17T09:15:00Z",
-  constraints: [
-    {
-      id: "counts-cached",
-      severity: "info",
-      text: "Counts are cached for 60 seconds. Use Refresh for the latest snapshot.",
+export const dashboardPage = definePage({
+  envelope: {
+    title: "Admin dashboard",
+    purpose:
+      "At-a-glance overview of the admin workspace — user counts, active sessions, recent activity.",
+    role: "admin",
+    layout: "topbar",
+    nav: { items: adminNav.active("/dashboard") },
+    paths: {
+      view: "/dashboard",
+      markdown: "/dashboard.md",
     },
-  ],
-  tools: [
-    {
-      name: "refreshDashboard",
-      title: "Refresh dashboard",
-      description: "Invalidate cache and fetch the latest counts and activity.",
-      role: "admin",
-    },
-    {
-      name: "viewEvent",
-      title: "View audit event",
-      description: "Open an audit event by id.",
-      role: "admin",
-      input: {
-        type: "object",
-        properties: { id: { type: "string" } },
-        required: ["id"],
+    updatedAt: "2026-04-17T09:15:00Z",
+    constraints: [
+      {
+        id: "counts-cached",
+        severity: "info",
+        text: "Counts are cached for 60 seconds. Use Refresh for the latest snapshot.",
       },
-    },
-  ],
-};
-
-export function DashboardPage() {
-  return (
-    <Page layout="topbar" nav={withActive("/dashboard")}>
+    ],
+    tools: [
+      {
+        name: "refreshDashboard",
+        title: "Refresh dashboard",
+        description: "Invalidate cache and fetch the latest counts and activity.",
+        role: "admin",
+      },
+      {
+        name: "viewEvent",
+        title: "View audit event",
+        description: "Open an audit event by id.",
+        role: "admin",
+        input: {
+          type: "object",
+          properties: { id: { type: "string" } },
+          required: ["id"],
+        },
+      },
+    ],
+  },
+  render: () => (
+    <Page>
       <Heading level={1}>Admin dashboard</Heading>
       <Paragraph>
         Workspace overview. Counts are cached for 60 seconds — see the{" "}
@@ -137,5 +136,5 @@ export function DashboardPage() {
 
       <Button action="refreshDashboard">Refresh dashboard</Button>
     </Page>
-  );
-}
+  ),
+});

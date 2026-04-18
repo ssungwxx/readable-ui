@@ -9,8 +9,8 @@ import {
   List,
   ListItem,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { adminNav } from "../_shared/admin-nav";
 
 interface AuditRow extends Record<string, unknown> {
   id: string;
@@ -84,13 +84,14 @@ const TOTAL_PAGES = Math.ceil(TOTAL_ROWS / PAGE_SIZE);
 const CURRENT_SORT = "when:desc";
 const ACTIVE_FILTER = { actor: "alice@example.com" } as const;
 
-export const auditEnvelope: Envelope = {
+export const auditPage = definePage({
+  envelope: {
   title: "Audit log",
   purpose:
     "Immutable log of every privileged action — who did what, when, on which resource, from which IP.",
   role: "admin",
   layout: "sidebar",
-  nav: { items: withActive("/audit") },
+  nav: { items: adminNav.active("/audit") },
   paths: {
     view: "/audit",
     markdown: "/audit.md",
@@ -142,11 +143,9 @@ export const auditEnvelope: Envelope = {
       },
     },
   ],
-};
-
-export function AuditPage() {
-  return (
-    <Page layout="sidebar" nav={withActive("/audit")}>
+  },
+  render: () => (
+    <Page>
       <Heading level={1}>Audit log</Heading>
       <Paragraph>
         Immutable trail of privileged actions. The{" "}
@@ -197,5 +196,5 @@ export function AuditPage() {
         ]}
       />
     </Page>
-  );
-}
+  ),
+});

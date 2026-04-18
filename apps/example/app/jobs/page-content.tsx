@@ -9,8 +9,8 @@ import {
   Alert,
   CodeSpan,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { adminNav } from "../_shared/admin-nav";
 
 interface Job extends Record<string, unknown> {
   id: string;
@@ -33,12 +33,13 @@ const FILTER_STATUS = "error";
 const filteredJobs: Job[] = allJobs.filter((j) => j.status === FILTER_STATUS);
 // filteredJobs is [] — empty rows triggers the auto Alert
 
-export const jobsEnvelope: Envelope = {
+export const jobsPage = definePage({
+  envelope: {
   title: "Background jobs",
   purpose: "Monitor background job queue — 5-stage status palette + empty-state demo.",
   role: "admin",
   layout: "sidebar",
-  nav: { items: withActive("/users") },
+  nav: { items: adminNav.active("/users") },
   paths: {
     view: "/jobs",
     markdown: "/jobs.md",
@@ -64,11 +65,9 @@ export const jobsEnvelope: Envelope = {
       },
     },
   ],
-};
-
-export function JobsPage() {
-  return (
-    <Page layout="sidebar" nav={withActive("/users")}>
+  },
+  render: () => (
+    <Page>
       <Heading level={1}>Background jobs</Heading>
       <Paragraph>
         Job queue status — filtered to <CodeSpan>error</CodeSpan> jobs to demonstrate the{" "}
@@ -110,5 +109,5 @@ export function JobsPage() {
         rows={allJobs}
       />
     </Page>
-  );
-}
+  ),
+});

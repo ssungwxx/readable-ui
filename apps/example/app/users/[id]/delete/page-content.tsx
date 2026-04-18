@@ -11,8 +11,8 @@ import {
   ListItem,
   Strong,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../../../_shared/admin-nav";
+import { definePage, type Envelope } from "@readable-ui/react";
+import { adminNav } from "../../../_shared/admin-nav";
 
 interface DeleteUserConfirmProps {
   id: string;
@@ -37,7 +37,7 @@ const fixtureUsers: Record<string, Omit<DeleteUserConfirmProps, "id">> = {
  * ADR 0020 §5: intent="destructive-confirm" marks this as a preview-response page.
  * envelope tools[] lists only the actual action (deleteUser) — preview is already consumed.
  */
-export function makeDeleteUserEnvelope(id: string): Envelope {
+function makeDeleteUserEnvelope({ id }: { id: string }): Envelope {
   const user = fixtureUsers[id] ?? { email: "unknown", role: "?", status: "?", createdAt: "?" };
   return {
     title: `Delete user`,
@@ -45,7 +45,7 @@ export function makeDeleteUserEnvelope(id: string): Envelope {
     intent: "destructive-confirm",
     role: "admin",
     layout: "sidebar",
-    nav: { items: withActive("/users") },
+    nav: { items: adminNav.active("/users") },
     paths: {
       // tentative: ADR 0020 left URL convention out of scope — decided here as REST style
       view: `/users/${id}/delete`,
@@ -81,37 +81,40 @@ export function makeDeleteUserEnvelope(id: string): Envelope {
   };
 }
 
-export function DeleteUserConfirmPage({ id }: { id: string }) {
-  const user = fixtureUsers[id] ?? {
-    email: "unknown",
-    role: "?",
-    status: "?",
-    createdAt: "?",
-  };
+export const deleteUserPage = definePage<{ id: string }>({
+  envelope: makeDeleteUserEnvelope,
+  render: ({ id }) => {
+    const user = fixtureUsers[id] ?? {
+      email: "unknown",
+      role: "?",
+      status: "?",
+      createdAt: "?",
+    };
 
-  return (
-    <Page layout="sidebar" nav={withActive("/users")}>
-      <Heading level={1}>Delete user</Heading>
+    return (
+      <Page>
+        <Heading level={1}>Delete user</Heading>
 
-      <Card title="Delete user">
-        <List>
-          <ListItem><Strong>Email</Strong>: {user.email}</ListItem>
-          <ListItem><Strong>Role</Strong>: {user.role}</ListItem>
-          <ListItem><Strong>Status</Strong>: {user.status}</ListItem>
-          <ListItem><Strong>Created</Strong>: {user.createdAt}</ListItem>
-        </List>
-      </Card>
+        <Card title="Delete user">
+          <List>
+            <ListItem><Strong>Email</Strong>: {user.email}</ListItem>
+            <ListItem><Strong>Role</Strong>: {user.role}</ListItem>
+            <ListItem><Strong>Status</Strong>: {user.status}</ListItem>
+            <ListItem><Strong>Created</Strong>: {user.createdAt}</ListItem>
+          </List>
+        </Card>
 
-      <Alert kind="caution">
-        Deleting this user is permanent and cannot be undone.
-      </Alert>
+        <Alert kind="caution">
+          Deleting this user is permanent and cannot be undone.
+        </Alert>
 
-      {/* ADR 0020 §5: Confirm Form with hidden id + danger Button + Cancel */}
-      <Form action="deleteUser">
-        <Input type="hidden" name="id" defaultValue={id} />
-        <Button action="deleteUser">Confirm delete</Button>
-        <Button action="listUsers" variant="secondary">Cancel</Button>
-      </Form>
-    </Page>
-  );
-}
+        {/* ADR 0020 §5: Confirm Form with hidden id + danger Button + Cancel */}
+        <Form action="deleteUser">
+          <Input type="hidden" name="id" defaultValue={id} />
+          <Button action="deleteUser">Confirm delete</Button>
+          <Button action="listUsers" variant="secondary">Cancel</Button>
+        </Form>
+      </Page>
+    );
+  },
+});

@@ -1,6 +1,4 @@
 "use client";
-import { SettingsPage } from "./page-content";
+import { settingsPage } from "./page-content";
 
-export default function Page() {
-  return <SettingsPage />;
-}
+export default settingsPage.Component;

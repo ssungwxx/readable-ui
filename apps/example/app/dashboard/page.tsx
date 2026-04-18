@@ -1,5 +1,3 @@
-import { DashboardPage } from "./page-content";
+import { dashboardPage } from "./page-content";
 
-export default function Page() {
-  return <DashboardPage />;
-}
+export default dashboardPage.Component;

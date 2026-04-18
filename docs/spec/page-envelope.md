@@ -2,7 +2,11 @@
 
 readable-ui로 변환된 모든 Markdown 문서는 **반드시** 최상단에 YAML frontmatter로 된 envelope을 가진다. 본 문서는 envelope의 필드·검증 규칙·에러 케이스를 정의한다.
 
-> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md)
+> 결정 근거: [ADR 0005](../adr/0005-page-envelope.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0012](../adr/0012-dual-render-convention-signals.md), [ADR 0014](../adr/0014-nav-as-envelope-metadata.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0020](../adr/0020-close-crud-idiom-gaps.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md), [ADR 0026](../adr/0026-define-page-dx-layer.md)
+
+## 권장 소비 경로 — `definePage`
+
+envelope 을 직접 `renderPage(<Page/>, envelope)` 로 소비하는 저-레벨 API 는 계속 유효하지만, Next.js App Router 환경에서는 `definePage({ envelope, render })` 헬퍼를 권장한다 (ADR 0026). 헬퍼는 envelope 을 eager 검증하고, HTML 렌더 시 root `<Page>` 에 `layout` / `nav` / `breadcrumb` 를 cloneElement 로 주입하며, `.GET` Route Handler 와 `.Component` React 컴포넌트를 한 선언에서 반환한다. envelope 스키마 자체는 본 spec 과 동일하며 변경되지 않는다.
 
 ## 구조
 

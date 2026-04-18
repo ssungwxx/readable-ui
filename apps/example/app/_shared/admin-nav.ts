@@ -1,6 +1,8 @@
-import type { NavItem } from "@readable-ui/react";
+import { defineNav } from "@readable-ui/react";
 
-export const adminNav: NavItem[] = [
+// ADR 0026 — promoted `withActive` to library helper `defineNav`.
+// Existing imports of `adminNav` / `withActive` continue to work (re-exports below).
+export const adminNav = defineNav([
   { label: "Dashboard", href: "/dashboard" },
   { label: "Users", href: "/users" },
   { label: "Roles", href: "/roles" },
@@ -8,10 +10,9 @@ export const adminNav: NavItem[] = [
   { label: "Reports", href: "/reports" },
   { label: "Components", href: "/components" },
   { label: "Settings", href: "/settings" },
-];
+]);
 
-export function withActive(href: string): NavItem[] {
-  return adminNav.map((item) =>
-    item.href === href ? { ...item, active: true } : item
-  );
+/** @deprecated use `adminNav.active(href)` directly. Kept for backward compat. */
+export function withActive(href: string) {
+  return adminNav.active(href);
 }

@@ -20,11 +20,13 @@ import {
   Descriptions,
   CodeSpan,
 } from "@readable-ui/react/components";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { settingsEnvelope } from "./envelope";
 
-export function SettingsPage() {
-  return (
-    <Page layout="sidebar" nav={withActive("/settings")}>
+export const settingsPage = definePage({
+  envelope: settingsEnvelope,
+  render: () => (
+    <Page>
       <Heading level={1}>Settings</Heading>
       <Paragraph>
         Tabs and Accordion from ADR 0025. Compare with the{" "}
@@ -177,5 +179,5 @@ export function SettingsPage() {
         </Tabs>
       </Section>
     </Page>
-  );
-}
+  ),
+});

@@ -1,5 +1,5 @@
 import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { adminNav } from "../_shared/admin-nav";
 
 export const componentsEnvelope: Envelope = {
   title: "Tier 3 components — Section, Steps, Split",
@@ -7,7 +7,7 @@ export const componentsEnvelope: Envelope = {
     "Demonstrates Section (heading wrapper), Steps (ordered progress), and Split (2-column layout) components introduced in ADR 0025.",
   role: "admin",
   layout: "sidebar",
-  nav: { items: withActive("/components") },
+  nav: { items: adminNav.active("/components") },
   paths: {
     view: "/components",
     markdown: "/components.md",

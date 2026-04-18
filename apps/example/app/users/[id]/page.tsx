@@ -1,4 +1,6 @@
-import { UserDetailPage } from "./page-content";
+import { userDetailPage } from "./page-content";
+
+const UserDetail = userDetailPage.Component;
 
 interface PageParams {
   params: Promise<{ id: string }>;
@@ -19,5 +21,5 @@ export const dynamicParams = true;
 
 export default async function Page({ params }: PageParams) {
   const { id } = await params;
-  return <UserDetailPage id={id} />;
+  return <UserDetail id={id} />;
 }

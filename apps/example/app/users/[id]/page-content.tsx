@@ -13,8 +13,8 @@ import {
   Table,
   Descriptions,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../../_shared/admin-nav";
+import { definePage, type Envelope } from "@readable-ui/react";
+import { adminNav } from "../../_shared/admin-nav";
 
 interface UserDetail {
   id: string;
@@ -111,14 +111,14 @@ function recentActivityFor(userId: string): ActivityEvent[] {
  * Envelope factory for the user-detail page.
  * ADR 0021: layout="detail" + nav remains as the global admin shell signal.
  */
-export function makeUserDetailEnvelope(id: string): Envelope {
+function makeUserDetailEnvelope({ id }: { id: string }): Envelope {
   const user = fixtureUsers[id] ?? { ...fallbackUser, id };
   return {
     title: user.name,
     purpose: `Detail view for user ${user.email}`,
     role: "admin",
     layout: "detail",
-    nav: { items: withActive("/users") },
+    nav: { items: adminNav.active("/users") },
     // ADR 0024 §4: breadcrumb replaces the single-link `back` idiom for nested resources.
     breadcrumb: [
       { label: "Users", href: "/users" },
@@ -177,19 +177,14 @@ export function makeUserDetailEnvelope(id: string): Envelope {
   };
 }
 
-export function UserDetailPage({ id }: { id: string }) {
+export const userDetailPage = definePage<{ id: string }>({
+  envelope: makeUserDetailEnvelope,
+  render: ({ id }) => {
   const user = fixtureUsers[id] ?? { ...fallbackUser, id };
   const activity = recentActivityFor(user.id);
 
   return (
     <Page
-      layout="detail"
-      nav={withActive("/users")}
-      // ADR 0024 §4: breadcrumb replaces `back` when 2+ items are available.
-      breadcrumb={[
-        { label: "Users", href: "/users" },
-        { label: user.name },
-      ]}
       meta={
         <Descriptions
           title="Details"
@@ -263,4 +258,5 @@ export function UserDetailPage({ id }: { id: string }) {
       </Card>
     </Page>
   );
-}
+  },
+});

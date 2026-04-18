@@ -14,8 +14,8 @@ import {
   Descriptions,
   CodeSpan,
 } from "@readable-ui/react/components";
-import type { Envelope } from "@readable-ui/react";
-import { withActive } from "../_shared/admin-nav";
+import { definePage } from "@readable-ui/react";
+import { adminNav } from "../_shared/admin-nav";
 
 interface WeeklyMetric extends Record<string, unknown> {
   id: string;
@@ -46,13 +46,14 @@ const topPlans: TopPlan[] = [
   { id: "plan_starter", plan: "Starter", customers: 1102, mrr: "$5,510", growth: "+1.2%" },
 ];
 
-export const reportsEnvelope: Envelope = {
+export const reportsPage = definePage({
+  envelope: {
   title: "Reports",
   purpose:
     "Business reporting — weekly KPI snapshot, plan-level revenue split, and exportable drill-downs.",
   role: "admin",
   layout: "topbar",
-  nav: { items: withActive("/reports") },
+  nav: { items: adminNav.active("/reports") },
   // ADR 0024 §4: breadcrumb showcases hierarchical path in a topbar layout.
   breadcrumb: [
     { label: "Home", href: "/" },
@@ -112,18 +113,9 @@ export const reportsEnvelope: Envelope = {
       },
     },
   ],
-};
-
-export function ReportsPage() {
-  return (
-    <Page
-      layout="topbar"
-      nav={withActive("/reports")}
-      breadcrumb={[
-        { label: "Home", href: "/" },
-        { label: "Reports" },
-      ]}
-    >
+  },
+  render: () => (
+    <Page>
       <Heading level={1}>Reports</Heading>
       <Paragraph>
         Weekly business snapshot for the Acme admin workspace. Compare with the{" "}
@@ -211,5 +203,5 @@ export function ReportsPage() {
         <Button action="exportReport">Export weekly CSV</Button>
       </Card>
     </Page>
-  );
-}
+  ),
+});

@@ -1,5 +1,3 @@
-import { AuditPage } from "./page-content";
+import { auditPage } from "./page-content";
 
-export default function Page() {
-  return <AuditPage />;
-}
+export default auditPage.Component;

@@ -15,6 +15,8 @@ readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트
 
 페이지의 최상위 쉘. `layout`·`nav`·detail 전용 prop(`back`/`meta`/`footer`)은 **props**로 받는다 (카탈로그 확장이 아님 — ADR 0011, ADR 0021).
 
+> DX 권장: ADR 0026 이후 `definePage({ envelope, render })` 를 통해 root `<Page>` 에 `layout` / `nav` / `breadcrumb` 가 envelope 에서 자동 주입되므로, render 내부에서 해당 prop 을 반복 명시할 필요가 없다. `back` / `meta` / `footer` 는 계속 prop 으로 전달한다. `definePage` 는 새 컴포넌트가 아니며 카탈로그에 영향을 주지 않는다.
+
 - Markdown: envelope YAML 뒤에 이어지는 body. nav가 있으면 body 맨 앞에 `## Navigation` (scope=section일 때 `## Section navigation`) 섹션 flush.
 - **nav 우선순위** (ADR 0014): envelope `nav.items` > Page prop `nav` > (없음). 둘 다 주어지면 envelope 우선 + 불일치 시 warning. 신규 작성 시 envelope에 선언 권장.
 - HTML: `layout` 값에 따라 `<main>` 또는 `<aside>+<main>` / `<header>+<main>` / detail 3영역 (header + body grid + footer) 쉘 분기.
