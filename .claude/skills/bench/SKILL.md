@@ -15,6 +15,8 @@ description: readable-ui 전송 계층 벤치 (`bench/` 패키지, `pnpm bench`)
 - 새 시나리오 추가, 새 transport 추가, actionable 카운트 기준 변경
 - `pnpm bench` 실행 방식 / 결과 아티팩트 포맷 변경
 
+**이 skill 과 `bench-runner` skill 의 분계선**: spec·코드 **편집**은 이 skill, **실행·결과 해석·baseline 비교/갱신**은 `bench-runner` skill. 운영 중 spec 위반 정황이 보이면 `bench-runner` 에서 이 skill 로 에스컬레이션된다.
+
 ## 1. 세 런너 공정성 규칙 (spec §4)
 
 세 런너는 **같은 `apps/example` 라우트 DOM 상태**에서 출력한다.
