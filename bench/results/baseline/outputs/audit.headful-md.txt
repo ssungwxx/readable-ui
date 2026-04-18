@@ -18,6 +18,10 @@ Audit log
 
 Reports
 
+Components
+
+Settings
+
 WORKSPACE
 
 Acme Admin

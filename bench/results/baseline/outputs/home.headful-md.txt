@@ -66,4 +66,24 @@ View HTML
 
 View Markdown .md
 
+## Components (Tier 3 — Section, Steps, Split)
+
+SIDEBAR
+
+ADR 0025 — Section heading wrapper, Steps progress sequence, Split 2-column layout.
+
+View HTML
+
+View Markdown .md
+
+## Settings (Tier 3 — Tabs, Accordion)
+
+SIDEBAR
+
+ADR 0025 — Tabs tab-switcher and Accordion collapsible panels with client-state.
+
+View HTML
+
+View Markdown .md
+
 Append .md to any route — same tree, different representation.

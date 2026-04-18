@@ -1,6 +1,6 @@
-# readable-ui bench — 2026-04-18T05-04-18-922Z
+# readable-ui bench — 2026-04-18T06-06-43-127Z
 
-- git: `5a60c7c`
+- git: `bc9c941`
 - node: `v22.14.0`
 - transports: readable-ui, ax-tree, headful-md
 - scenarios: 7
@@ -14,8 +14,8 @@
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | readable-ui | — | — | — | — | — | — | — |
-| ax-tree | 63719 | 63674 | 15991 | 4.7 | 12 | 1332.58 | — |
-| headful-md | 1135 | 1120 | 312 | 0.1 | 0 | — | — |
+| ax-tree | 80820 | 80743 | 20310 | 4.4 | 16 | 1269.38 | — |
+| headful-md | 1476 | 1453 | 417 | 0.1 | 0 | — | — |
 
 ### `dashboard` — /dashboard
 
@@ -23,9 +23,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 2672 | 2667 | 793 | 7.5 | 5 | 158.60 | 1 |
-| ax-tree | 80545 | 80539 | 20359 | 4.3 | 11 | 1850.82 | 25.67 |
-| headful-md | 914 | 912 | 334 | 0.1 | 1 | 334 | 0.42 |
+| readable-ui | 2816 | 2811 | 829 | 7.3 | 5 | 165.80 | 1 |
+| ax-tree | 83137 | 83131 | 20998 | 4.8 | 13 | 1615.23 | 25.33 |
+| headful-md | 936 | 934 | 340 | 0.1 | 1 | 340 | 0.41 |
 
 ### `users` — /users
 
@@ -33,9 +33,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 5386 | 5367 | 1494 | 7.6 | 13 | 114.92 | 1 |
-| ax-tree | 132092 | 131959 | 34060 | 4.8 | 29 | 1174.48 | 22.80 |
-| headful-md | 1155 | 1132 | 425 | 0.2 | 4 | 106.25 | 0.28 |
+| readable-ui | 5530 | 5511 | 1530 | 6.9 | 13 | 117.69 | 1 |
+| ax-tree | 134702 | 134569 | 34719 | 6.1 | 31 | 1119.97 | 22.69 |
+| headful-md | 1177 | 1154 | 431 | 0.2 | 4 | 107.75 | 0.28 |
 
 ### `user-detail` — /users/u_alice_01
 
@@ -43,9 +43,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 3132 | 3127 | 927 | 8.0 | 3 | 309 | 1 |
-| ax-tree | 85859 | 85821 | 22328 | 4.6 | 10 | 2232.80 | 24.09 |
-| headful-md | 719 | 703 | 275 | 0.1 | 3 | 91.67 | 0.30 |
+| readable-ui | 3276 | 3271 | 963 | 7.9 | 3 | 321 | 1 |
+| ax-tree | 85859 | 85821 | 22293 | 4.5 | 10 | 2229.30 | 23.15 |
+| headful-md | 719 | 703 | 275 | 0.1 | 3 | 91.67 | 0.29 |
 
 ### `reports` — /reports
 
@@ -53,9 +53,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 4834 | 4805 | 1504 | 6.5 | 8 | 188 | 1 |
-| ax-tree | 178220 | 178137 | 46406 | 7.9 | 15 | 3093.73 | 30.86 |
-| headful-md | 1723 | 1690 | 666 | 0.2 | 1 | 666 | 0.44 |
+| readable-ui | 4978 | 4949 | 1540 | 6.3 | 8 | 192.50 | 1 |
+| ax-tree | 180830 | 180747 | 47061 | 8.7 | 17 | 2768.29 | 30.56 |
+| headful-md | 1745 | 1712 | 672 | 0.1 | 1 | 672 | 0.44 |
 
 ### `audit` — /audit
 
@@ -63,9 +63,9 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 35162 | 35035 | 13164 | 7.4 | 5 | 2632.80 | 1 |
-| ax-tree | 106360 | 106302 | 27813 | 5.1 | 17 | 1636.06 | 2.11 |
-| headful-md | 1195 | 1179 | 425 | 0.1 | 0 | — | 0.03 |
+| readable-ui | 35306 | 35179 | 13200 | 6.6 | 5 | 2640 | 1 |
+| ax-tree | 108970 | 108912 | 28459 | 5.0 | 19 | 1497.84 | 2.16 |
+| headful-md | 1217 | 1201 | 431 | 0.1 | 0 | — | 0.03 |
 
 ### `jobs` — /jobs
 
@@ -73,32 +73,32 @@
 
 | transport | bytes | chars | tokens | renderTimeMs | actionable | infoDensity | sizeRatio |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| readable-ui | 2153 | 2148 | 608 | 6.1 | 0 | — | 1 |
-| ax-tree | 69025 | 69016 | 17880 | 3.8 | 12 | 1490 | 29.41 |
-| headful-md | 744 | 741 | 245 | 0.1 | 0 | — | 0.40 |
+| readable-ui | 2297 | 2292 | 644 | 6.0 | 0 | — | 1 |
+| ax-tree | 71635 | 71626 | 18531 | 5.0 | 14 | 1323.64 | 28.77 |
+| headful-md | 766 | 763 | 251 | 0.1 | 0 | — | 0.39 |
 
 ## Across-scenario summary
 
 | transport | metric | median | mean | min | max |
 |---|---|---:|---:|---:|---:|
-| readable-ui | bytes | 3983 | 8889.83 | 2153 | 35162 |
-| readable-ui | chars | 3966 | 8858.17 | 2148 | 35035 |
-| readable-ui | tokens | 1210.50 | 3081.67 | 608 | 13164 |
-| readable-ui | renderTimeMs | 7.42 | 7.16 | 6.08 | 7.96 |
+| readable-ui | bytes | 4127 | 9033.83 | 2297 | 35306 |
+| readable-ui | chars | 4110 | 9002.17 | 2292 | 35179 |
+| readable-ui | tokens | 1246.50 | 3117.67 | 644 | 13200 |
+| readable-ui | renderTimeMs | 6.75 | 6.85 | 6.05 | 7.94 |
 | readable-ui | actionable | 5 | 5.67 | 0 | 13 |
-| ax-tree | bytes | 85859 | 102260 | 63719 | 178220 |
-| ax-tree | chars | 85821 | 102206.86 | 63674 | 178137 |
-| ax-tree | tokens | 22328 | 26405.29 | 15991 | 46406 |
-| ax-tree | renderTimeMs | 4.69 | 5.02 | 3.75 | 7.93 |
-| ax-tree | actionable | 12 | 15.14 | 10 | 29 |
-| headful-md | bytes | 1135 | 1083.57 | 719 | 1723 |
-| headful-md | chars | 1120 | 1068.14 | 703 | 1690 |
-| headful-md | tokens | 334 | 383.14 | 245 | 666 |
-| headful-md | renderTimeMs | 0.13 | 0.14 | 0.06 | 0.25 |
+| ax-tree | bytes | 85859 | 106564.71 | 71635 | 180830 |
+| ax-tree | chars | 85821 | 106507 | 71626 | 180747 |
+| ax-tree | tokens | 22293 | 27481.57 | 18531 | 47061 |
+| ax-tree | renderTimeMs | 4.98 | 5.50 | 4.40 | 8.75 |
+| ax-tree | actionable | 16 | 17.14 | 10 | 31 |
+| headful-md | bytes | 1177 | 1148 | 719 | 1745 |
+| headful-md | chars | 1154 | 1131.43 | 703 | 1712 |
+| headful-md | tokens | 417 | 402.43 | 251 | 672 |
+| headful-md | renderTimeMs | 0.12 | 0.12 | 0.06 | 0.23 |
 | headful-md | actionable | 1 | 1.29 | 0 | 4 |
 
 ## Takeaways
 
-- ax-tree uses 2148.9% more tokens than readable-ui across 6 scenarios (mean sizeRatio 22.49, median 24.88).
-- headful-md uses 68.7% fewer tokens than readable-ui across 6 scenarios (mean sizeRatio 0.31, median 0.35).
+- ax-tree uses 2111.0% more tokens than readable-ui across 6 scenarios (mean sizeRatio 22.11, median 24.24).
+- headful-md uses 69.4% fewer tokens than readable-ui across 6 scenarios (mean sizeRatio 0.31, median 0.34).
 - readable-ui skipped 1 scenario(s): home (no .md envelope route).

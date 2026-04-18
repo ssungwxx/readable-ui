@@ -17,6 +17,10 @@ nav:
     - label: Reports
       href: /reports
       active: true
+    - label: Components
+      href: /components
+    - label: Settings
+      href: /settings
 breadcrumb:
   - label: Home
     href: /
@@ -86,6 +90,8 @@ extensions:
 - [Roles](/roles)
 - [Audit log](/audit)
 - [Reports](/reports) · current
+- [Components](/components)
+- [Settings](/settings)
 
 [Home](/) › Reports
 

@@ -16,6 +16,10 @@ nav:
       href: /audit
     - label: Reports
       href: /reports
+    - label: Components
+      href: /components
+    - label: Settings
+      href: /settings
 paths:
   view: /jobs
   markdown: /jobs.md
@@ -60,6 +64,8 @@ extensions:
 - [Roles](/roles)
 - [Audit log](/audit)
 - [Reports](/reports)
+- [Components](/components)
+- [Settings](/settings)
 
 # Background jobs
 

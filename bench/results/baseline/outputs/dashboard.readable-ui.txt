@@ -17,6 +17,10 @@ nav:
       href: /audit
     - label: Reports
       href: /reports
+    - label: Components
+      href: /components
+    - label: Settings
+      href: /settings
 paths:
   view: /dashboard
   markdown: /dashboard.md
@@ -57,6 +61,8 @@ extensions:
 - [Roles](/roles)
 - [Audit log](/audit)
 - [Reports](/reports)
+- [Components](/components)
+- [Settings](/settings)
 
 # Admin dashboard
 
