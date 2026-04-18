@@ -18,6 +18,7 @@
 
 - [Page Envelope](./spec/page-envelope.md) — YAML frontmatter + JSON Schema tools
 - [Component Catalog (v1)](./spec/component-catalog.md) — 허용 컴포넌트·directive 직렬화
+- [Bench](./spec/bench.md) — readable-ui · ax-tree · headful-md 3중 비교 (포인터; 정본 `bench/docs/metrics.md`)
 
 ## Accepted ADRs
 
@@ -43,6 +44,7 @@
 - [0020 — CRUD idiom gaps closure: 2단계 삭제·자동 CodeSpan·EmptyState fallback](./adr/0020-close-crud-idiom-gaps.md)
 - [0021 — Detail page layout (단건 상세 화면 쉘)](./adr/0021-detail-page-layout.md)
 - [0022 — 데이터 헤비 Table 의 fenced payload 분리 (`readable-ui:data` JSONL)](./adr/0022-table-payload-fenced.md)
+- [0023 — Benchmark environment (readable-ui · ax-tree · headful-md 3중 비교)](./adr/0023-benchmark-environment.md)
 
 ## Open Decisions
 

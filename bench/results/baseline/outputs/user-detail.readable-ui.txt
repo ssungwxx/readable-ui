@@ -1,0 +1,126 @@
+---
+title: Alice Example
+purpose: Detail view for user alice@example.com
+role: admin
+layout: detail
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+    - label: Users
+      href: /users
+      active: true
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+    - label: Reports
+      href: /reports
+paths:
+  view: /users/u_alice_01
+  markdown: /users/u_alice_01.md
+updatedAt: 2026-04-18T03:33:39.073Z
+tools:
+  - name: listUsers
+    title: List users
+    description: Return to the users list.
+    role: admin
+  - name: updateUser
+    title: Update user
+    description: Update a user's role.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+      required:
+        - id
+    role: admin
+  - name: deleteUserPreview
+    title: Preview delete user
+    description: Open the confirmation page before permanently deleting a user.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+  - name: viewEvent
+    title: View audit event
+    description: Open an audit event by id.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard)
+- [Users](/users) · current
+- [Roles](/roles)
+- [Audit log](/audit)
+- [Reports](/reports)
+
+[← Back to Users](/users)
+
+# Alice Example
+
+alice\@example.com
+
+:::card{title="Profile"}
+- **Email**: alice\@example.com
+- **Role**: `admin`
+- **Status**: `active`
+:::
+
+::::card{title="Update role"}
+:::form{action="updateUser"}
+::input{name="id" type="hidden" default="u_alice_01"}
+
+::input{name="role" label="Role" placeholder="admin or user" default="admin"}
+
+::button[Save changes]
+:::
+::::
+
+::::card{title="Recent activity"}
+:::table{tool="viewEvent"}
+| id                 | When             | Action       | Target       | Actions                                         |
+| :----------------- | :--------------- | :----------- | :----------- | :---------------------------------------------- |
+| u\_alice\_01\_evt1 | 2026-04-17 09:14 | `updateUser` | u\_alice\_01 | [Open](mcp://tool/viewEvent?id=u_alice_01_evt1) |
+| u\_alice\_01\_evt2 | 2026-04-15 14:02 | `updateUser` | u\_alice\_01 | [Open](mcp://tool/viewEvent?id=u_alice_01_evt2) |
+| u\_alice\_01\_evt3 | 2026-04-12 10:00 | createUser   | u\_alice\_01 | [Open](mcp://tool/viewEvent?id=u_alice_01_evt3) |
+:::
+::::
+
+:::card{title="Details"}
+- **ID**: `u_alice_01`
+- **Created**: 2026-04-12
+- **Last seen**: 2026-04-18 08:42
+- **Invited by**: system
+:::
+
+:::form{action="deleteUserPreview"}
+::input{name="id" type="hidden" default="u_alice_01"}
+
+::button[Delete user…]{variant="danger"}
+:::

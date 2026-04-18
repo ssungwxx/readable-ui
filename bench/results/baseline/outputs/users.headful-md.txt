@@ -1,0 +1,104 @@
+## complementary
+
+readable
+
+/
+
+ui
+
+## navigation
+
+Dashboard
+
+Users
+
+Roles
+
+Audit log
+
+Reports
+
+WORKSPACE
+
+Acme Admin
+
+## main
+
+# Users
+
+Manage users. Any change here is auditable. See the Markdown view for the AI-facing version.
+
+CAUTION
+
+Deleting a user is permanent and cannot be undone.
+
+Active users
+
+135
+
+total
+
+Filter
+
+status
+
+·
+
+active
+
+role
+
+·
+
+user
+
+| ID | EMAIL | ROLE | STATUS | CREATED ▼ | ACTIONS |
+| --- | --- | --- | --- | --- | --- |
+| u_alice_01 | alice@example.com | admin | active | 2026-04-12 | Edit Delete… |
+| u_bob_01 | bob@example.com | user | active | 2026-04-10 | Edit Delete… |
+| u_carol_01 | carol@example.com | user | pending | 2026-04-08 | Edit Delete… |
+| u_dave_02 | dave@example.com | user | disabled | 2026-03-30 | Edit Delete… |
+| u_legacy_07 | legacy@example.com | user | archived | 2025-12-01 | Edit Delete… |
+| u_err_03 | errbob@example.com | user | error | 2026-04-15 | Edit Delete… |
+
+Page
+
+2
+
+of
+
+7
+
+·
+
+135
+
+rows
+
+← Prev
+
+Next →
+
+View all 135 rows
+
+### CREATE A NEW USER
+
+Name
+
+*
+
+- Name required: ___
+
+Email
+
+*
+
+- Email required: ___
+
+Role
+
+*
+
+- Role required: ___Select…___
+
+[Create user]

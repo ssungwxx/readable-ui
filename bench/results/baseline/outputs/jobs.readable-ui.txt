@@ -1,0 +1,85 @@
+---
+title: Background jobs
+purpose: Monitor background job queue — 5-stage status palette + empty-state demo.
+role: admin
+layout: sidebar
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+    - label: Users
+      href: /users
+      active: true
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+    - label: Reports
+      href: /reports
+paths:
+  view: /jobs
+  markdown: /jobs.md
+updatedAt: 2026-04-18T00:00:00Z
+tools:
+  - name: listJobs
+    title: List jobs
+    description: List background jobs. Accepts `_filter_status` with the 5-stage palette.
+    input:
+      type: object
+      properties:
+        _page:
+          type: integer
+          minimum: 1
+          default: 1
+        _size:
+          type: integer
+          minimum: 1
+          default: 20
+        _filter_status:
+          type: string
+          enum:
+            - active
+            - pending
+            - archived
+            - disabled
+            - error
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard)
+- [Users](/users) · current
+- [Roles](/roles)
+- [Audit log](/audit)
+- [Reports](/reports)
+
+# Background jobs
+
+Job queue status — filtered to `error` jobs to demonstrate the [EmptyState fallback](/jobs.md) in the Markdown view.
+
+> [!NOTE]
+> Currently showing jobs filtered to status="error". No error jobs are present.
+
+:::table{tool="listJobs" total="0" filter-status="error"}
+| id | Name | Status | Started |
+| :- | :--- | :----- | :------ |
+:::
+
+## All jobs (palette preview)
+
+:::table{tool="listJobs" total="4"}
+| id       | Name           | Status     | Started          |
+| :------- | :------------- | :--------- | :--------------- |
+| job\_001 | nightly-backup | `active`   | 2026-04-18 02:00 |
+| job\_002 | report-export  | `pending`  | 2026-04-18 03:00 |
+| job\_003 | data-migration | `archived` | 2026-04-01 00:00 |
+| job\_004 | key-rotation   | `disabled` | 2026-04-10 12:00 |
+:::

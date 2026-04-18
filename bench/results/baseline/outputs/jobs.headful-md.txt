@@ -1,0 +1,53 @@
+## complementary
+
+readable
+
+/
+
+ui
+
+## navigation
+
+Dashboard
+
+Users
+
+Roles
+
+Audit log
+
+Reports
+
+WORKSPACE
+
+Acme Admin
+
+## main
+
+# Background jobs
+
+Job queue status — filtered to error jobs to demonstrate the EmptyState fallback in the Markdown view.
+
+NOTE
+
+Currently showing jobs filtered to status="error". No error jobs are present.
+
+Filter
+
+status
+
+·
+
+error
+
+| ID | NAME | STATUS | STARTED |
+| --- | --- | --- | --- |
+
+## All jobs (palette preview)
+
+| ID | NAME | STATUS | STARTED |
+| --- | --- | --- | --- |
+| job_001 | nightly-backup | active | 2026-04-18 02:00 |
+| job_002 | report-export | pending | 2026-04-18 03:00 |
+| job_003 | data-migration | archived | 2026-04-01 00:00 |
+| job_004 | key-rotation | disabled | 2026-04-10 12:00 |

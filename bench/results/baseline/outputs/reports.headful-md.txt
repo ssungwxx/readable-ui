@@ -1,0 +1,78 @@
+## banner
+
+readable
+
+/
+
+ui
+
+## navigation
+
+Dashboard
+
+Users
+
+Roles
+
+Audit log
+
+Reports
+
+All systems operational
+
+## main
+
+# Reports
+
+Weekly business snapshot for the Acme admin workspace. Compare with the Markdown view to see the same data AI-ready.
+
+TIP
+
+Week 16 is still in progress — numbers update every hour at :05.
+
+### THIS WEEK AT A GLANCE
+
+## $28,430
+
+Revenue to date, +8.9% WoW. Driven mostly by Team plan upgrades.
+
+### SIGNUPS · 7D
+
+## 142
+
+New accounts created in the last seven days.
+
+### ACTIVE ACCOUNTS
+
+## 894
+
+At least one authenticated session in the last 48 hours.
+
+### RETENTION NOTES
+
+- • Week-1 retention is steady at 64% across plans.
+- • Team plan expansion driven by seat top-ups, not new logos.
+- • Churn concentrated in Starter plan — investigate onboarding funnel.
+
+Weekly KPI snapshot
+
+| ID | WEEK | SIGNUPS | ACTIVE | REVENUE | ACTIONS |
+| --- | --- | --- | --- | --- | --- |
+| w2026-16 | 2026-W16 | 142 | 894 | $28,430 | Open |
+| w2026-15 | 2026-W15 | 128 | 871 | $26,110 | Open |
+| w2026-14 | 2026-W14 | 119 | 842 | $24,980 | Open |
+| w2026-13 | 2026-W13 | 106 | 817 | $23,410 | Open |
+
+Revenue by plan
+
+| ID | PLAN | CUSTOMERS | MRR | GROWTH | ACTIONS |
+| --- | --- | --- | --- | --- | --- |
+| plan_team | Team | 214 | $12,840 | +8.1% | Details |
+| plan_pro | Pro | 486 | $9,720 | +3.4% | Details |
+| plan_starter | Starter | 1102 | $5,510 | +1.2% | Details |
+
+### EXPORT
+
+Snapshot the current view for sharing. Exports are delivered as CSV via email.
+
+[Export weekly CSV]

@@ -1,0 +1,44 @@
+## banner
+
+Back to Users
+
+## main
+
+# Alice Example
+
+alice@example.com
+
+### PROFILE
+
+- • Email : alice@example.com
+- • Role : admin
+- • Status : active
+
+### UPDATE ROLE
+
+Role
+
+- Role: ___admin___
+
+[Save changes]
+
+### RECENT ACTIVITY
+
+| ID | WHEN | ACTION | TARGET | ACTIONS |
+| --- | --- | --- | --- | --- |
+| u_alice_01_evt1 | 2026-04-17 09:14 | updateUser | u_alice_01 | Open |
+| u_alice_01_evt2 | 2026-04-15 14:02 | updateUser | u_alice_01 | Open |
+| u_alice_01_evt3 | 2026-04-12 10:00 | createUser | u_alice_01 | Open |
+
+## complementary
+
+### DETAILS
+
+- • ID : u_alice_01
+- • Created : 2026-04-12
+- • Last seen : 2026-04-18 08:42
+- • Invited by : system
+
+## contentinfo
+
+[Delete user…]

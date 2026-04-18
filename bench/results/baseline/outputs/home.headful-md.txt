@@ -1,0 +1,69 @@
+## main
+
+# readable-ui example
+
+Same React tree · two renderings.
+
+Each sample page is rendered twice from one component tree: a richly-designed HTML view for humans, and a clean Markdown view for agents. Open both side-by-side to see what AI sees vs. what a human sees.
+
+## Dashboard
+
+TOPBAR
+
+Workspace overview — counts, recent activity, a single refresh action.
+
+View HTML
+
+View Markdown .md
+
+## Users
+
+SIDEBAR
+
+Form-heavy CRUD — paginated table + create form, typed tool params.
+
+View HTML
+
+View Markdown .md
+
+## Reports
+
+TOPBAR
+
+Mixed composition — stat cards, weekly table, revenue by plan, export.
+
+View HTML
+
+View Markdown .md
+
+## Audit log
+
+SIDEBAR
+
+Immutable feed — filter + sort + paginated summary, view-only rows.
+
+View HTML
+
+View Markdown .md
+
+## Background jobs
+
+SIDEBAR
+
+Background jobs — empty state and 5-stage status palette fixture.
+
+View HTML
+
+View Markdown .md
+
+## User detail (Alice)
+
+DETAIL
+
+Single-resource view — back nav, profile + meta rail, footer destructive action.
+
+View HTML
+
+View Markdown .md
+
+Append .md to any route — same tree, different representation.

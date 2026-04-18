@@ -1,0 +1,172 @@
+---
+title: User management
+purpose: Admin page to list, create, update, and delete user accounts.
+role: admin
+layout: sidebar
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+    - label: Users
+      href: /users
+      active: true
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+    - label: Reports
+      href: /reports
+paths:
+  view: /users
+  markdown: /users.md
+constraints:
+  - id: delete-irreversible
+    text: Deleting a user is permanent and cannot be undone.
+    severity: danger
+  - id: audit-log
+    text: All mutations here are recorded in the audit log.
+    severity: info
+updatedAt: 2026-04-18T00:00:00Z
+tools:
+  - name: listUsers
+    title: List users
+    description: List users with pagination / sort / filter. Accepts `_page`,
+      `_size`, `_sort=<key>:<dir>`, and `_filter_<field>=<value>` query params.
+      Unspecified params fall back to each property's `default` value.
+    input:
+      type: object
+      properties:
+        _page:
+          type: integer
+          minimum: 1
+          default: 1
+        _size:
+          type: integer
+          minimum: 1
+          default: 20
+        _sort:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$
+          default: createdAt:desc
+        _filter_status:
+          type: string
+          enum:
+            - active
+            - pending
+            - archived
+            - disabled
+            - error
+        _filter_role:
+          type: string
+          enum:
+            - admin
+            - user
+    role: admin
+  - name: createUser
+    title: Create user
+    description: Create a new user.
+    input:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+      required:
+        - name
+        - email
+        - role
+    role: admin
+  - name: updateUser
+    title: Update user
+    description: Update a user's role.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+      required:
+        - id
+    role: admin
+  - name: deleteUserPreview
+    title: Preview delete user
+    description: Return a confirmation page before permanently deleting a user.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+  - name: deleteUser
+    title: Delete user
+    description: Permanently delete a user by id.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard)
+- [Users](/users) · current
+- [Roles](/roles)
+- [Audit log](/audit)
+- [Reports](/reports)
+
+# Users
+
+Manage users. Any change here is auditable. See the [Markdown view](/users.md) for the AI-facing version.
+
+> [!CAUTION]
+> Deleting a user is permanent and cannot be undone.
+
+:::table{tool="listUsers" page="2" of="7" size="20" total="135" sort="createdAt:desc" mode="summary" caption="Active users" filter-status="active" filter-role="user"}
+| id            | Email               | Role    | Status     | Created    | Actions                                                                                               |
+| :------------ | :------------------ | :------ | :--------- | :--------- | :---------------------------------------------------------------------------------------------------- |
+| u\_alice\_01  | alice\@example.com  | `admin` | `active`   | 2026-04-12 | [Edit](mcp://tool/updateUser?id=u_alice_01) · [Delete…](mcp://tool/deleteUserPreview?id=u_alice_01)   |
+| u\_bob\_01    | bob\@example.com    | `user`  | `active`   | 2026-04-10 | [Edit](mcp://tool/updateUser?id=u_bob_01) · [Delete…](mcp://tool/deleteUserPreview?id=u_bob_01)       |
+| u\_carol\_01  | carol\@example.com  | `user`  | `pending`  | 2026-04-08 | [Edit](mcp://tool/updateUser?id=u_carol_01) · [Delete…](mcp://tool/deleteUserPreview?id=u_carol_01)   |
+| u\_dave\_02   | dave\@example.com   | `user`  | `disabled` | 2026-03-30 | [Edit](mcp://tool/updateUser?id=u_dave_02) · [Delete…](mcp://tool/deleteUserPreview?id=u_dave_02)     |
+| u\_legacy\_07 | legacy\@example.com | `user`  | `archived` | 2025-12-01 | [Edit](mcp://tool/updateUser?id=u_legacy_07) · [Delete…](mcp://tool/deleteUserPreview?id=u_legacy_07) |
+| u\_err\_03    | errbob\@example.com | `user`  | `error`    | 2026-04-15 | [Edit](mcp://tool/updateUser?id=u_err_03) · [Delete…](mcp://tool/deleteUserPreview?id=u_err_03)       |
+
+[View all 135 rows](mcp://tool/listUsers?_page=1&_size=135&_sort=createdAt%3Adesc)
+:::
+
+::::card{title="Create a new user"}
+:::form{action="createUser"}
+::input{name="name" label="Name" placeholder="Jane Doe" minlength="1" required}
+
+::input{name="email" type="email" label="Email" placeholder="jane@example.com" format="email" required}
+
+::select{name="role" options="admin,user" label="Role" required}
+
+::button[Create user]
+:::
+::::

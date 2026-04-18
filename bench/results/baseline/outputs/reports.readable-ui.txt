@@ -1,0 +1,140 @@
+---
+title: Reports
+purpose: Business reporting — weekly KPI snapshot, plan-level revenue split, and
+  exportable drill-downs.
+role: admin
+layout: topbar
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+    - label: Users
+      href: /users
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+    - label: Reports
+      href: /reports
+      active: true
+paths:
+  view: /reports
+  markdown: /reports.md
+constraints:
+  - id: cohort-utc
+    text: All cohorts are grouped in UTC. Local-time slicing is not yet supported.
+    severity: info
+  - id: revenue-accrual
+    text: Revenue is accrual-based. It may differ from billed totals by up to 48
+      hours.
+    severity: warn
+updatedAt: 2026-04-18T06:00:00Z
+tools:
+  - name: exportReport
+    title: Export report
+    description: Export the current report to CSV.
+    input:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+            - weekly
+            - plans
+      required:
+        - scope
+    role: admin
+  - name: viewPlan
+    title: View plan detail
+    description: Open a subscription plan detail view.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+  - name: openWeek
+    title: Open weekly cohort
+    description: Open a weekly cohort drill-down view.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard)
+- [Users](/users)
+- [Roles](/roles)
+- [Audit log](/audit)
+- [Reports](/reports) · current
+
+# Reports
+
+Weekly business snapshot for the Acme admin workspace. Compare with the [Markdown view](/reports.md) to see the same data AI-ready.
+
+> [!TIP]
+> Week 16 is still in progress — numbers update every hour at :05.
+
+:::card{title="This week at a glance"}
+## $28,430
+
+Revenue to date, +8.9% WoW. Driven mostly by [Team](/reports#team) plan upgrades.
+:::
+
+:::card{title="Signups · 7d"}
+## 142
+
+New accounts created in the last seven days.
+:::
+
+:::card{title="Active accounts"}
+## 894
+
+At least one authenticated session in the last 48 hours.
+:::
+
+:::card{title="Retention notes"}
+- Week-1 retention is steady at 64% across plans.
+- Team plan expansion driven by seat top-ups, not new logos.
+- Churn concentrated in Starter plan — investigate onboarding funnel.
+:::
+
+:::table{caption="Weekly KPI snapshot"}
+| id       | Week     | Signups | Active | Revenue | Actions                                 |
+| :------- | :------- | ------: | -----: | ------: | :-------------------------------------- |
+| w2026-16 | 2026-W16 |     142 |    894 | $28,430 | [Open](mcp://tool/openWeek?id=w2026-16) |
+| w2026-15 | 2026-W15 |     128 |    871 | $26,110 | [Open](mcp://tool/openWeek?id=w2026-15) |
+| w2026-14 | 2026-W14 |     119 |    842 | $24,980 | [Open](mcp://tool/openWeek?id=w2026-14) |
+| w2026-13 | 2026-W13 |     106 |    817 | $23,410 | [Open](mcp://tool/openWeek?id=w2026-13) |
+:::
+
+:::table{caption="Revenue by plan"}
+| id            | Plan    | Customers |     MRR | Growth | Actions                                        |
+| :------------ | :------ | --------: | ------: | -----: | :--------------------------------------------- |
+| plan\_team    | Team    |       214 | $12,840 |  +8.1% | [Details](mcp://tool/viewPlan?id=plan_team)    |
+| plan\_pro     | Pro     |       486 |  $9,720 |  +3.4% | [Details](mcp://tool/viewPlan?id=plan_pro)     |
+| plan\_starter | Starter |      1102 |  $5,510 |  +1.2% | [Details](mcp://tool/viewPlan?id=plan_starter) |
+:::
+
+:::card{title="Export"}
+Snapshot the current view for sharing. Exports are delivered as CSV via email.
+
+::button[Export weekly CSV]{action="exportReport"}
+
+[Export weekly CSV](mcp://tool/exportReport "fallback")
+:::

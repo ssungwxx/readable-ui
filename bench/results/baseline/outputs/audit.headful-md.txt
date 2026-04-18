@@ -1,0 +1,77 @@
+## complementary
+
+readable
+
+/
+
+ui
+
+## navigation
+
+Dashboard
+
+Users
+
+Roles
+
+Audit log
+
+Reports
+
+WORKSPACE
+
+Acme Admin
+
+## main
+
+# Audit log
+
+Immutable trail of privileged actions. The Markdown view shows the same feed without styling — ideal for agents that want to scan the data.
+
+IMPORTANT
+
+Audit entries cannot be edited once written. Retention is 400 days.
+
+### SCOPE
+
+- • All mutations from the admin console.
+- • System-triggered rotations and backups.
+- • Report exports and data downloads.
+
+Recent events
+
+312
+
+total
+
+Filter
+
+actor
+
+·
+
+alice@example.com
+
+| ID | WHEN ▼ | ACTOR | ACTION | TARGET | IP | ACTIONS |
+| --- | --- | --- | --- | --- | --- | --- |
+| evt_a000 | 2026-04-18 05:42 | alice@example.com | updateUser | u_alice_01 | 10.0.14.22 | Open |
+| evt_a001 | 2026-04-18 05:30 | bob@example.com | rotateKey | api-key-us | 203.0.113.14 | Open |
+| evt_a002 | 2026-04-18 05:18 | carol@example.com | deleteUser | u_carol_03 | 198.51.100.7 | Open |
+| evt_a003 | 2026-04-18 05:06 | system | exportReport | reports/weekly | — | Open |
+| evt_a004 | 2026-04-18 04:54 | alice@example.com | createUser | u_legacy_05 | 10.0.14.22 | Open |
+
+Page
+
+1
+
+of
+
+2
+
+·
+
+312
+
+rows
+
+Next →

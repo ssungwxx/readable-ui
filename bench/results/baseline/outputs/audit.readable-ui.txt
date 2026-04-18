@@ -1,0 +1,351 @@
+---
+title: Audit log
+purpose: Immutable log of every privileged action — who did what, when, on which
+  resource, from which IP.
+role: admin
+layout: sidebar
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+    - label: Users
+      href: /users
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+      active: true
+    - label: Reports
+      href: /reports
+paths:
+  view: /audit
+  markdown: /audit.md
+constraints:
+  - id: retention
+    text: Audit entries are retained for 400 days, then cold-stored to S3 Glacier.
+    severity: info
+  - id: immutable
+    text: Entries are append-only. There is no supported way to edit or redact a
+      prior event.
+    severity: warn
+updatedAt: 2026-04-18T05:42:00Z
+tools:
+  - name: listAuditEvents
+    title: List audit events
+    description: List audit events with pagination / sort / filter. Accepts `_page`,
+      `_size`, `_sort=<key>:<dir>`, `_filter_actor=<email>`,
+      `_filter_action=<name>`.
+    input:
+      type: object
+      properties:
+        _page:
+          type: integer
+          minimum: 1
+          default: 1
+        _size:
+          type: integer
+          minimum: 1
+          default: 25
+        _sort:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+:(asc|desc|ASC|DESC)$
+          default: when:desc
+        _filter_actor:
+          type: string
+        _filter_action:
+          type: string
+    role: admin
+  - name: viewAuditEvent
+    title: View audit event
+    description: Open a single audit event by id.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard)
+- [Users](/users)
+- [Roles](/roles)
+- [Audit log](/audit) · current
+- [Reports](/reports)
+
+# Audit log
+
+Immutable trail of privileged actions. The [Markdown view](/audit.md) shows the same feed without styling — ideal for agents that want to scan the data.
+
+> [!IMPORTANT]
+> Audit entries cannot be edited once written. Retention is 400 days.
+
+:::card{title="Scope"}
+- All mutations from the admin console.
+- System-triggered rotations and backups.
+- Report exports and data downloads.
+:::
+
+:::table{tool="listAuditEvents" page="1" of="2" size="240" total="312" sort="when:desc" mode="payload" caption="Recent events" filter-actor="alice@example.com"}
+| id        | When             | Actor              | Action       | Target         | IP           | Actions                                       |
+| :-------- | :--------------- | :----------------- | :----------- | :------------- | :----------- | :-------------------------------------------- |
+| evt\_a000 | 2026-04-18 05:42 | alice\@example.com | updateUser   | u\_alice\_01   | 10.0.14.22   | [Open](mcp://tool/viewAuditEvent?id=evt_a000) |
+| evt\_a001 | 2026-04-18 05:30 | bob\@example.com   | rotateKey    | api-key-us     | 203.0.113.14 | [Open](mcp://tool/viewAuditEvent?id=evt_a001) |
+| evt\_a002 | 2026-04-18 05:18 | carol\@example.com | deleteUser   | u\_carol\_03   | 198.51.100.7 | [Open](mcp://tool/viewAuditEvent?id=evt_a002) |
+| evt\_a003 | 2026-04-18 05:06 | system             | exportReport | reports/weekly | —            | [Open](mcp://tool/viewAuditEvent?id=evt_a003) |
+| evt\_a004 | 2026-04-18 04:54 | alice\@example.com | createUser   | u\_legacy\_05  | 10.0.14.22   | [Open](mcp://tool/viewAuditEvent?id=evt_a004) |
+
+```readable-ui:data
+{"id":"evt_a000","when":"2026-04-18 05:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_01","ip":"10.0.14.22"}
+{"id":"evt_a001","when":"2026-04-18 05:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-us","ip":"203.0.113.14"}
+{"id":"evt_a002","when":"2026-04-18 05:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_03","ip":"198.51.100.7"}
+{"id":"evt_a003","when":"2026-04-18 05:06","actor":"system","action":"exportReport","target":"reports/weekly","ip":"—"}
+{"id":"evt_a004","when":"2026-04-18 04:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_05","ip":"10.0.14.22"}
+{"id":"evt_a005","when":"2026-04-18 04:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_06","ip":"203.0.113.14"}
+{"id":"evt_a006","when":"2026-04-18 04:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-eu","ip":"198.51.100.7"}
+{"id":"evt_a007","when":"2026-04-18 04:18","actor":"system","action":"deleteUser","target":"u_carol_08","ip":"—"}
+{"id":"evt_a008","when":"2026-04-18 04:06","actor":"alice@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"10.0.14.22"}
+{"id":"evt_a009","when":"2026-04-18 03:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_10","ip":"203.0.113.14"}
+{"id":"evt_a00a","when":"2026-04-18 03:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_11","ip":"198.51.100.7"}
+{"id":"evt_a00b","when":"2026-04-18 03:30","actor":"system","action":"rotateKey","target":"api-key-ap","ip":"—"}
+{"id":"evt_a00c","when":"2026-04-18 03:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_01","ip":"10.0.14.22"}
+{"id":"evt_a00d","when":"2026-04-18 03:06","actor":"bob@example.com","action":"exportReport","target":"reports/monthly","ip":"203.0.113.14"}
+{"id":"evt_a00e","when":"2026-04-18 02:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_03","ip":"198.51.100.7"}
+{"id":"evt_a00f","when":"2026-04-18 02:42","actor":"system","action":"updateUser","target":"u_alice_04","ip":"—"}
+{"id":"evt_a010","when":"2026-04-18 02:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-us","ip":"10.0.14.22"}
+{"id":"evt_a011","when":"2026-04-18 02:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_06","ip":"203.0.113.14"}
+{"id":"evt_a012","when":"2026-04-18 02:06","actor":"carol@example.com","action":"exportReport","target":"reports/weekly","ip":"198.51.100.7"}
+{"id":"evt_a013","when":"2026-04-18 01:54","actor":"system","action":"createUser","target":"u_legacy_08","ip":"—"}
+{"id":"evt_a014","when":"2026-04-18 01:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_09","ip":"10.0.14.22"}
+{"id":"evt_a015","when":"2026-04-18 01:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-eu","ip":"203.0.113.14"}
+{"id":"evt_a016","when":"2026-04-18 01:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_11","ip":"198.51.100.7"}
+{"id":"evt_a017","when":"2026-04-18 01:06","actor":"system","action":"exportReport","target":"reports/ad-hoc","ip":"—"}
+{"id":"evt_a018","when":"2026-04-18 00:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_01","ip":"10.0.14.22"}
+{"id":"evt_a019","when":"2026-04-18 00:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_02","ip":"203.0.113.14"}
+{"id":"evt_a01a","when":"2026-04-18 00:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-ap","ip":"198.51.100.7"}
+{"id":"evt_a01b","when":"2026-04-18 00:18","actor":"system","action":"deleteUser","target":"u_carol_04","ip":"—"}
+{"id":"evt_a01c","when":"2026-04-18 00:06","actor":"alice@example.com","action":"exportReport","target":"reports/monthly","ip":"10.0.14.22"}
+{"id":"evt_a01d","when":"2026-04-17 23:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_06","ip":"203.0.113.14"}
+{"id":"evt_a01e","when":"2026-04-17 23:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_07","ip":"198.51.100.7"}
+{"id":"evt_a01f","when":"2026-04-17 23:30","actor":"system","action":"rotateKey","target":"api-key-us","ip":"—"}
+{"id":"evt_a020","when":"2026-04-17 23:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_09","ip":"10.0.14.22"}
+{"id":"evt_a021","when":"2026-04-17 23:06","actor":"bob@example.com","action":"exportReport","target":"reports/weekly","ip":"203.0.113.14"}
+{"id":"evt_a022","when":"2026-04-17 22:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_11","ip":"198.51.100.7"}
+{"id":"evt_a023","when":"2026-04-17 22:42","actor":"system","action":"updateUser","target":"u_alice_12","ip":"—"}
+{"id":"evt_a024","when":"2026-04-17 22:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-eu","ip":"10.0.14.22"}
+{"id":"evt_a025","when":"2026-04-17 22:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_02","ip":"203.0.113.14"}
+{"id":"evt_a026","when":"2026-04-17 22:06","actor":"carol@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"198.51.100.7"}
+{"id":"evt_a027","when":"2026-04-17 21:54","actor":"system","action":"createUser","target":"u_legacy_04","ip":"—"}
+{"id":"evt_a028","when":"2026-04-17 21:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_05","ip":"10.0.14.22"}
+{"id":"evt_a029","when":"2026-04-17 21:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-ap","ip":"203.0.113.14"}
+{"id":"evt_a02a","when":"2026-04-17 21:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_07","ip":"198.51.100.7"}
+{"id":"evt_a02b","when":"2026-04-17 21:06","actor":"system","action":"exportReport","target":"reports/monthly","ip":"—"}
+{"id":"evt_a02c","when":"2026-04-17 20:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_09","ip":"10.0.14.22"}
+{"id":"evt_a02d","when":"2026-04-17 20:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_10","ip":"203.0.113.14"}
+{"id":"evt_a02e","when":"2026-04-17 20:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-us","ip":"198.51.100.7"}
+{"id":"evt_a02f","when":"2026-04-17 20:18","actor":"system","action":"deleteUser","target":"u_carol_12","ip":"—"}
+{"id":"evt_a030","when":"2026-04-17 20:06","actor":"alice@example.com","action":"exportReport","target":"reports/weekly","ip":"10.0.14.22"}
+{"id":"evt_a031","when":"2026-04-17 19:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_02","ip":"203.0.113.14"}
+{"id":"evt_a032","when":"2026-04-17 19:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_03","ip":"198.51.100.7"}
+{"id":"evt_a033","when":"2026-04-17 19:30","actor":"system","action":"rotateKey","target":"api-key-eu","ip":"—"}
+{"id":"evt_a034","when":"2026-04-17 19:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_05","ip":"10.0.14.22"}
+{"id":"evt_a035","when":"2026-04-17 19:06","actor":"bob@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"203.0.113.14"}
+{"id":"evt_a036","when":"2026-04-17 18:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_07","ip":"198.51.100.7"}
+{"id":"evt_a037","when":"2026-04-17 18:42","actor":"system","action":"updateUser","target":"u_alice_08","ip":"—"}
+{"id":"evt_a038","when":"2026-04-17 18:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-ap","ip":"10.0.14.22"}
+{"id":"evt_a039","when":"2026-04-17 18:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_10","ip":"203.0.113.14"}
+{"id":"evt_a03a","when":"2026-04-17 18:06","actor":"carol@example.com","action":"exportReport","target":"reports/monthly","ip":"198.51.100.7"}
+{"id":"evt_a03b","when":"2026-04-17 17:54","actor":"system","action":"createUser","target":"u_legacy_12","ip":"—"}
+{"id":"evt_a03c","when":"2026-04-17 17:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_01","ip":"10.0.14.22"}
+{"id":"evt_a03d","when":"2026-04-17 17:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-us","ip":"203.0.113.14"}
+{"id":"evt_a03e","when":"2026-04-17 17:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_03","ip":"198.51.100.7"}
+{"id":"evt_a03f","when":"2026-04-17 17:06","actor":"system","action":"exportReport","target":"reports/weekly","ip":"—"}
+{"id":"evt_a040","when":"2026-04-17 16:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_05","ip":"10.0.14.22"}
+{"id":"evt_a041","when":"2026-04-17 16:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_06","ip":"203.0.113.14"}
+{"id":"evt_a042","when":"2026-04-17 16:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-eu","ip":"198.51.100.7"}
+{"id":"evt_a043","when":"2026-04-17 16:18","actor":"system","action":"deleteUser","target":"u_carol_08","ip":"—"}
+{"id":"evt_a044","when":"2026-04-17 16:06","actor":"alice@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"10.0.14.22"}
+{"id":"evt_a045","when":"2026-04-17 15:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_10","ip":"203.0.113.14"}
+{"id":"evt_a046","when":"2026-04-17 15:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_11","ip":"198.51.100.7"}
+{"id":"evt_a047","when":"2026-04-17 15:30","actor":"system","action":"rotateKey","target":"api-key-ap","ip":"—"}
+{"id":"evt_a048","when":"2026-04-17 15:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_01","ip":"10.0.14.22"}
+{"id":"evt_a049","when":"2026-04-17 15:06","actor":"bob@example.com","action":"exportReport","target":"reports/monthly","ip":"203.0.113.14"}
+{"id":"evt_a04a","when":"2026-04-17 14:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_03","ip":"198.51.100.7"}
+{"id":"evt_a04b","when":"2026-04-17 14:42","actor":"system","action":"updateUser","target":"u_alice_04","ip":"—"}
+{"id":"evt_a04c","when":"2026-04-17 14:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-us","ip":"10.0.14.22"}
+{"id":"evt_a04d","when":"2026-04-17 14:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_06","ip":"203.0.113.14"}
+{"id":"evt_a04e","when":"2026-04-17 14:06","actor":"carol@example.com","action":"exportReport","target":"reports/weekly","ip":"198.51.100.7"}
+{"id":"evt_a04f","when":"2026-04-17 13:54","actor":"system","action":"createUser","target":"u_legacy_08","ip":"—"}
+{"id":"evt_a050","when":"2026-04-17 13:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_09","ip":"10.0.14.22"}
+{"id":"evt_a051","when":"2026-04-17 13:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-eu","ip":"203.0.113.14"}
+{"id":"evt_a052","when":"2026-04-17 13:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_11","ip":"198.51.100.7"}
+{"id":"evt_a053","when":"2026-04-17 13:06","actor":"system","action":"exportReport","target":"reports/ad-hoc","ip":"—"}
+{"id":"evt_a054","when":"2026-04-17 12:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_01","ip":"10.0.14.22"}
+{"id":"evt_a055","when":"2026-04-17 12:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_02","ip":"203.0.113.14"}
+{"id":"evt_a056","when":"2026-04-17 12:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-ap","ip":"198.51.100.7"}
+{"id":"evt_a057","when":"2026-04-17 12:18","actor":"system","action":"deleteUser","target":"u_carol_04","ip":"—"}
+{"id":"evt_a058","when":"2026-04-17 12:06","actor":"alice@example.com","action":"exportReport","target":"reports/monthly","ip":"10.0.14.22"}
+{"id":"evt_a059","when":"2026-04-17 11:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_06","ip":"203.0.113.14"}
+{"id":"evt_a05a","when":"2026-04-17 11:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_07","ip":"198.51.100.7"}
+{"id":"evt_a05b","when":"2026-04-17 11:30","actor":"system","action":"rotateKey","target":"api-key-us","ip":"—"}
+{"id":"evt_a05c","when":"2026-04-17 11:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_09","ip":"10.0.14.22"}
+{"id":"evt_a05d","when":"2026-04-17 11:06","actor":"bob@example.com","action":"exportReport","target":"reports/weekly","ip":"203.0.113.14"}
+{"id":"evt_a05e","when":"2026-04-17 10:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_11","ip":"198.51.100.7"}
+{"id":"evt_a05f","when":"2026-04-17 10:42","actor":"system","action":"updateUser","target":"u_alice_12","ip":"—"}
+{"id":"evt_a060","when":"2026-04-17 10:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-eu","ip":"10.0.14.22"}
+{"id":"evt_a061","when":"2026-04-17 10:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_02","ip":"203.0.113.14"}
+{"id":"evt_a062","when":"2026-04-17 10:06","actor":"carol@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"198.51.100.7"}
+{"id":"evt_a063","when":"2026-04-17 09:54","actor":"system","action":"createUser","target":"u_legacy_04","ip":"—"}
+{"id":"evt_a064","when":"2026-04-17 09:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_05","ip":"10.0.14.22"}
+{"id":"evt_a065","when":"2026-04-17 09:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-ap","ip":"203.0.113.14"}
+{"id":"evt_a066","when":"2026-04-17 09:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_07","ip":"198.51.100.7"}
+{"id":"evt_a067","when":"2026-04-17 09:06","actor":"system","action":"exportReport","target":"reports/monthly","ip":"—"}
+{"id":"evt_a068","when":"2026-04-17 08:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_09","ip":"10.0.14.22"}
+{"id":"evt_a069","when":"2026-04-17 08:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_10","ip":"203.0.113.14"}
+{"id":"evt_a06a","when":"2026-04-17 08:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-us","ip":"198.51.100.7"}
+{"id":"evt_a06b","when":"2026-04-17 08:18","actor":"system","action":"deleteUser","target":"u_carol_12","ip":"—"}
+{"id":"evt_a06c","when":"2026-04-17 08:06","actor":"alice@example.com","action":"exportReport","target":"reports/weekly","ip":"10.0.14.22"}
+{"id":"evt_a06d","when":"2026-04-17 07:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_02","ip":"203.0.113.14"}
+{"id":"evt_a06e","when":"2026-04-17 07:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_03","ip":"198.51.100.7"}
+{"id":"evt_a06f","when":"2026-04-17 07:30","actor":"system","action":"rotateKey","target":"api-key-eu","ip":"—"}
+{"id":"evt_a070","when":"2026-04-17 07:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_05","ip":"10.0.14.22"}
+{"id":"evt_a071","when":"2026-04-17 07:06","actor":"bob@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"203.0.113.14"}
+{"id":"evt_a072","when":"2026-04-17 06:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_07","ip":"198.51.100.7"}
+{"id":"evt_a073","when":"2026-04-17 06:42","actor":"system","action":"updateUser","target":"u_alice_08","ip":"—"}
+{"id":"evt_a074","when":"2026-04-17 06:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-ap","ip":"10.0.14.22"}
+{"id":"evt_a075","when":"2026-04-17 06:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_10","ip":"203.0.113.14"}
+{"id":"evt_a076","when":"2026-04-17 06:06","actor":"carol@example.com","action":"exportReport","target":"reports/monthly","ip":"198.51.100.7"}
+{"id":"evt_a077","when":"2026-04-17 05:54","actor":"system","action":"createUser","target":"u_legacy_12","ip":"—"}
+{"id":"evt_a078","when":"2026-04-17 05:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_01","ip":"10.0.14.22"}
+{"id":"evt_a079","when":"2026-04-17 05:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-us","ip":"203.0.113.14"}
+{"id":"evt_a07a","when":"2026-04-17 05:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_03","ip":"198.51.100.7"}
+{"id":"evt_a07b","when":"2026-04-17 05:06","actor":"system","action":"exportReport","target":"reports/weekly","ip":"—"}
+{"id":"evt_a07c","when":"2026-04-17 04:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_05","ip":"10.0.14.22"}
+{"id":"evt_a07d","when":"2026-04-17 04:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_06","ip":"203.0.113.14"}
+{"id":"evt_a07e","when":"2026-04-17 04:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-eu","ip":"198.51.100.7"}
+{"id":"evt_a07f","when":"2026-04-17 04:18","actor":"system","action":"deleteUser","target":"u_carol_08","ip":"—"}
+{"id":"evt_a080","when":"2026-04-17 04:06","actor":"alice@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"10.0.14.22"}
+{"id":"evt_a081","when":"2026-04-17 03:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_10","ip":"203.0.113.14"}
+{"id":"evt_a082","when":"2026-04-17 03:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_11","ip":"198.51.100.7"}
+{"id":"evt_a083","when":"2026-04-17 03:30","actor":"system","action":"rotateKey","target":"api-key-ap","ip":"—"}
+{"id":"evt_a084","when":"2026-04-17 03:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_01","ip":"10.0.14.22"}
+{"id":"evt_a085","when":"2026-04-17 03:06","actor":"bob@example.com","action":"exportReport","target":"reports/monthly","ip":"203.0.113.14"}
+{"id":"evt_a086","when":"2026-04-17 02:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_03","ip":"198.51.100.7"}
+{"id":"evt_a087","when":"2026-04-17 02:42","actor":"system","action":"updateUser","target":"u_alice_04","ip":"—"}
+{"id":"evt_a088","when":"2026-04-17 02:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-us","ip":"10.0.14.22"}
+{"id":"evt_a089","when":"2026-04-17 02:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_06","ip":"203.0.113.14"}
+{"id":"evt_a08a","when":"2026-04-17 02:06","actor":"carol@example.com","action":"exportReport","target":"reports/weekly","ip":"198.51.100.7"}
+{"id":"evt_a08b","when":"2026-04-17 01:54","actor":"system","action":"createUser","target":"u_legacy_08","ip":"—"}
+{"id":"evt_a08c","when":"2026-04-17 01:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_09","ip":"10.0.14.22"}
+{"id":"evt_a08d","when":"2026-04-17 01:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-eu","ip":"203.0.113.14"}
+{"id":"evt_a08e","when":"2026-04-17 01:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_11","ip":"198.51.100.7"}
+{"id":"evt_a08f","when":"2026-04-17 01:06","actor":"system","action":"exportReport","target":"reports/ad-hoc","ip":"—"}
+{"id":"evt_a090","when":"2026-04-17 00:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_01","ip":"10.0.14.22"}
+{"id":"evt_a091","when":"2026-04-17 00:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_02","ip":"203.0.113.14"}
+{"id":"evt_a092","when":"2026-04-17 00:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-ap","ip":"198.51.100.7"}
+{"id":"evt_a093","when":"2026-04-17 00:18","actor":"system","action":"deleteUser","target":"u_carol_04","ip":"—"}
+{"id":"evt_a094","when":"2026-04-17 00:06","actor":"alice@example.com","action":"exportReport","target":"reports/monthly","ip":"10.0.14.22"}
+{"id":"evt_a095","when":"2026-04-16 23:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_06","ip":"203.0.113.14"}
+{"id":"evt_a096","when":"2026-04-16 23:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_07","ip":"198.51.100.7"}
+{"id":"evt_a097","when":"2026-04-16 23:30","actor":"system","action":"rotateKey","target":"api-key-us","ip":"—"}
+{"id":"evt_a098","when":"2026-04-16 23:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_09","ip":"10.0.14.22"}
+{"id":"evt_a099","when":"2026-04-16 23:06","actor":"bob@example.com","action":"exportReport","target":"reports/weekly","ip":"203.0.113.14"}
+{"id":"evt_a09a","when":"2026-04-16 22:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_11","ip":"198.51.100.7"}
+{"id":"evt_a09b","when":"2026-04-16 22:42","actor":"system","action":"updateUser","target":"u_alice_12","ip":"—"}
+{"id":"evt_a09c","when":"2026-04-16 22:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-eu","ip":"10.0.14.22"}
+{"id":"evt_a09d","when":"2026-04-16 22:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_02","ip":"203.0.113.14"}
+{"id":"evt_a09e","when":"2026-04-16 22:06","actor":"carol@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"198.51.100.7"}
+{"id":"evt_a09f","when":"2026-04-16 21:54","actor":"system","action":"createUser","target":"u_legacy_04","ip":"—"}
+{"id":"evt_a0a0","when":"2026-04-16 21:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_05","ip":"10.0.14.22"}
+{"id":"evt_a0a1","when":"2026-04-16 21:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-ap","ip":"203.0.113.14"}
+{"id":"evt_a0a2","when":"2026-04-16 21:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_07","ip":"198.51.100.7"}
+{"id":"evt_a0a3","when":"2026-04-16 21:06","actor":"system","action":"exportReport","target":"reports/monthly","ip":"—"}
+{"id":"evt_a0a4","when":"2026-04-16 20:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_09","ip":"10.0.14.22"}
+{"id":"evt_a0a5","when":"2026-04-16 20:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_10","ip":"203.0.113.14"}
+{"id":"evt_a0a6","when":"2026-04-16 20:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-us","ip":"198.51.100.7"}
+{"id":"evt_a0a7","when":"2026-04-16 20:18","actor":"system","action":"deleteUser","target":"u_carol_12","ip":"—"}
+{"id":"evt_a0a8","when":"2026-04-16 20:06","actor":"alice@example.com","action":"exportReport","target":"reports/weekly","ip":"10.0.14.22"}
+{"id":"evt_a0a9","when":"2026-04-16 19:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_02","ip":"203.0.113.14"}
+{"id":"evt_a0aa","when":"2026-04-16 19:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_03","ip":"198.51.100.7"}
+{"id":"evt_a0ab","when":"2026-04-16 19:30","actor":"system","action":"rotateKey","target":"api-key-eu","ip":"—"}
+{"id":"evt_a0ac","when":"2026-04-16 19:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_05","ip":"10.0.14.22"}
+{"id":"evt_a0ad","when":"2026-04-16 19:06","actor":"bob@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"203.0.113.14"}
+{"id":"evt_a0ae","when":"2026-04-16 18:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_07","ip":"198.51.100.7"}
+{"id":"evt_a0af","when":"2026-04-16 18:42","actor":"system","action":"updateUser","target":"u_alice_08","ip":"—"}
+{"id":"evt_a0b0","when":"2026-04-16 18:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-ap","ip":"10.0.14.22"}
+{"id":"evt_a0b1","when":"2026-04-16 18:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_10","ip":"203.0.113.14"}
+{"id":"evt_a0b2","when":"2026-04-16 18:06","actor":"carol@example.com","action":"exportReport","target":"reports/monthly","ip":"198.51.100.7"}
+{"id":"evt_a0b3","when":"2026-04-16 17:54","actor":"system","action":"createUser","target":"u_legacy_12","ip":"—"}
+{"id":"evt_a0b4","when":"2026-04-16 17:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_01","ip":"10.0.14.22"}
+{"id":"evt_a0b5","when":"2026-04-16 17:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-us","ip":"203.0.113.14"}
+{"id":"evt_a0b6","when":"2026-04-16 17:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_03","ip":"198.51.100.7"}
+{"id":"evt_a0b7","when":"2026-04-16 17:06","actor":"system","action":"exportReport","target":"reports/weekly","ip":"—"}
+{"id":"evt_a0b8","when":"2026-04-16 16:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_05","ip":"10.0.14.22"}
+{"id":"evt_a0b9","when":"2026-04-16 16:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_06","ip":"203.0.113.14"}
+{"id":"evt_a0ba","when":"2026-04-16 16:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-eu","ip":"198.51.100.7"}
+{"id":"evt_a0bb","when":"2026-04-16 16:18","actor":"system","action":"deleteUser","target":"u_carol_08","ip":"—"}
+{"id":"evt_a0bc","when":"2026-04-16 16:06","actor":"alice@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"10.0.14.22"}
+{"id":"evt_a0bd","when":"2026-04-16 15:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_10","ip":"203.0.113.14"}
+{"id":"evt_a0be","when":"2026-04-16 15:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_11","ip":"198.51.100.7"}
+{"id":"evt_a0bf","when":"2026-04-16 15:30","actor":"system","action":"rotateKey","target":"api-key-ap","ip":"—"}
+{"id":"evt_a0c0","when":"2026-04-16 15:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_01","ip":"10.0.14.22"}
+{"id":"evt_a0c1","when":"2026-04-16 15:06","actor":"bob@example.com","action":"exportReport","target":"reports/monthly","ip":"203.0.113.14"}
+{"id":"evt_a0c2","when":"2026-04-16 14:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_03","ip":"198.51.100.7"}
+{"id":"evt_a0c3","when":"2026-04-16 14:42","actor":"system","action":"updateUser","target":"u_alice_04","ip":"—"}
+{"id":"evt_a0c4","when":"2026-04-16 14:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-us","ip":"10.0.14.22"}
+{"id":"evt_a0c5","when":"2026-04-16 14:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_06","ip":"203.0.113.14"}
+{"id":"evt_a0c6","when":"2026-04-16 14:06","actor":"carol@example.com","action":"exportReport","target":"reports/weekly","ip":"198.51.100.7"}
+{"id":"evt_a0c7","when":"2026-04-16 13:54","actor":"system","action":"createUser","target":"u_legacy_08","ip":"—"}
+{"id":"evt_a0c8","when":"2026-04-16 13:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_09","ip":"10.0.14.22"}
+{"id":"evt_a0c9","when":"2026-04-16 13:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-eu","ip":"203.0.113.14"}
+{"id":"evt_a0ca","when":"2026-04-16 13:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_11","ip":"198.51.100.7"}
+{"id":"evt_a0cb","when":"2026-04-16 13:06","actor":"system","action":"exportReport","target":"reports/ad-hoc","ip":"—"}
+{"id":"evt_a0cc","when":"2026-04-16 12:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_01","ip":"10.0.14.22"}
+{"id":"evt_a0cd","when":"2026-04-16 12:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_02","ip":"203.0.113.14"}
+{"id":"evt_a0ce","when":"2026-04-16 12:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-ap","ip":"198.51.100.7"}
+{"id":"evt_a0cf","when":"2026-04-16 12:18","actor":"system","action":"deleteUser","target":"u_carol_04","ip":"—"}
+{"id":"evt_a0d0","when":"2026-04-16 12:06","actor":"alice@example.com","action":"exportReport","target":"reports/monthly","ip":"10.0.14.22"}
+{"id":"evt_a0d1","when":"2026-04-16 11:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_06","ip":"203.0.113.14"}
+{"id":"evt_a0d2","when":"2026-04-16 11:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_07","ip":"198.51.100.7"}
+{"id":"evt_a0d3","when":"2026-04-16 11:30","actor":"system","action":"rotateKey","target":"api-key-us","ip":"—"}
+{"id":"evt_a0d4","when":"2026-04-16 11:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_09","ip":"10.0.14.22"}
+{"id":"evt_a0d5","when":"2026-04-16 11:06","actor":"bob@example.com","action":"exportReport","target":"reports/weekly","ip":"203.0.113.14"}
+{"id":"evt_a0d6","when":"2026-04-16 10:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_11","ip":"198.51.100.7"}
+{"id":"evt_a0d7","when":"2026-04-16 10:42","actor":"system","action":"updateUser","target":"u_alice_12","ip":"—"}
+{"id":"evt_a0d8","when":"2026-04-16 10:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-eu","ip":"10.0.14.22"}
+{"id":"evt_a0d9","when":"2026-04-16 10:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_02","ip":"203.0.113.14"}
+{"id":"evt_a0da","when":"2026-04-16 10:06","actor":"carol@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"198.51.100.7"}
+{"id":"evt_a0db","when":"2026-04-16 09:54","actor":"system","action":"createUser","target":"u_legacy_04","ip":"—"}
+{"id":"evt_a0dc","when":"2026-04-16 09:42","actor":"alice@example.com","action":"updateUser","target":"u_alice_05","ip":"10.0.14.22"}
+{"id":"evt_a0dd","when":"2026-04-16 09:30","actor":"bob@example.com","action":"rotateKey","target":"api-key-ap","ip":"203.0.113.14"}
+{"id":"evt_a0de","when":"2026-04-16 09:18","actor":"carol@example.com","action":"deleteUser","target":"u_carol_07","ip":"198.51.100.7"}
+{"id":"evt_a0df","when":"2026-04-16 09:06","actor":"system","action":"exportReport","target":"reports/monthly","ip":"—"}
+{"id":"evt_a0e0","when":"2026-04-16 08:54","actor":"alice@example.com","action":"createUser","target":"u_legacy_09","ip":"10.0.14.22"}
+{"id":"evt_a0e1","when":"2026-04-16 08:42","actor":"bob@example.com","action":"updateUser","target":"u_alice_10","ip":"203.0.113.14"}
+{"id":"evt_a0e2","when":"2026-04-16 08:30","actor":"carol@example.com","action":"rotateKey","target":"api-key-us","ip":"198.51.100.7"}
+{"id":"evt_a0e3","when":"2026-04-16 08:18","actor":"system","action":"deleteUser","target":"u_carol_12","ip":"—"}
+{"id":"evt_a0e4","when":"2026-04-16 08:06","actor":"alice@example.com","action":"exportReport","target":"reports/weekly","ip":"10.0.14.22"}
+{"id":"evt_a0e5","when":"2026-04-16 07:54","actor":"bob@example.com","action":"createUser","target":"u_legacy_02","ip":"203.0.113.14"}
+{"id":"evt_a0e6","when":"2026-04-16 07:42","actor":"carol@example.com","action":"updateUser","target":"u_alice_03","ip":"198.51.100.7"}
+{"id":"evt_a0e7","when":"2026-04-16 07:30","actor":"system","action":"rotateKey","target":"api-key-eu","ip":"—"}
+{"id":"evt_a0e8","when":"2026-04-16 07:18","actor":"alice@example.com","action":"deleteUser","target":"u_carol_05","ip":"10.0.14.22"}
+{"id":"evt_a0e9","when":"2026-04-16 07:06","actor":"bob@example.com","action":"exportReport","target":"reports/ad-hoc","ip":"203.0.113.14"}
+{"id":"evt_a0ea","when":"2026-04-16 06:54","actor":"carol@example.com","action":"createUser","target":"u_legacy_07","ip":"198.51.100.7"}
+{"id":"evt_a0eb","when":"2026-04-16 06:42","actor":"system","action":"updateUser","target":"u_alice_08","ip":"—"}
+{"id":"evt_a0ec","when":"2026-04-16 06:30","actor":"alice@example.com","action":"rotateKey","target":"api-key-ap","ip":"10.0.14.22"}
+{"id":"evt_a0ed","when":"2026-04-16 06:18","actor":"bob@example.com","action":"deleteUser","target":"u_carol_10","ip":"203.0.113.14"}
+{"id":"evt_a0ee","when":"2026-04-16 06:06","actor":"carol@example.com","action":"exportReport","target":"reports/monthly","ip":"198.51.100.7"}
+{"id":"evt_a0ef","when":"2026-04-16 05:54","actor":"system","action":"createUser","target":"u_legacy_12","ip":"—"}
+
+```
+:::

@@ -1,0 +1,60 @@
+## banner
+
+readable
+
+/
+
+ui
+
+## navigation
+
+Dashboard
+
+Users
+
+Roles
+
+Audit log
+
+Reports
+
+All systems operational
+
+## main
+
+# Admin dashboard
+
+Workspace overview. Counts are cached for 60 seconds — see the Markdown view for the AI-facing version.
+
+NOTE
+
+Showing data up to 2026-04-17 09:15 UTC.
+
+### TOTAL USERS
+
+## 1,284
+
++12 this week.
+
+### ACTIVE TODAY
+
+## 318
+
+Unique sign-ins in the last 24 hours.
+
+### PENDING INVITES
+
+## 7
+
+Invites sent but not yet accepted.
+
+### RECENT ACTIVITY
+
+| ID | WHEN | ACTOR | ACTION | TARGET | ACTIONS |
+| --- | --- | --- | --- | --- | --- |
+| evt_a01 | 2026-04-17 09:14 | alice@example.com | updateUser | u_bob_01 | Open |
+| evt_a02 | 2026-04-17 09:02 | alice@example.com | createUser | u_dave_02 | Open |
+| evt_a03 | 2026-04-16 22:41 | system | rotateKey | api-key-eu | Open |
+| evt_a04 | 2026-04-16 17:03 | carol@example.com | viewAudit | 2026-Q1 | Open |
+
+[Refresh dashboard]

@@ -1,0 +1,99 @@
+---
+title: Admin dashboard
+purpose: At-a-glance overview of the admin workspace — user counts, active
+  sessions, recent activity.
+role: admin
+layout: topbar
+nav:
+  items:
+    - label: Dashboard
+      href: /dashboard
+      active: true
+    - label: Users
+      href: /users
+    - label: Roles
+      href: /roles
+    - label: Audit log
+      href: /audit
+    - label: Reports
+      href: /reports
+paths:
+  view: /dashboard
+  markdown: /dashboard.md
+constraints:
+  - id: counts-cached
+    text: Counts are cached for 60 seconds. Use Refresh for the latest snapshot.
+    severity: info
+updatedAt: 2026-04-17T09:15:00Z
+tools:
+  - name: refreshDashboard
+    title: Refresh dashboard
+    description: Invalidate cache and fetch the latest counts and activity.
+    role: admin
+  - name: viewEvent
+    title: View audit event
+    description: Open an audit event by id.
+    input:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    role: admin
+extensions:
+  conventions:
+    duplicate-button-link: dual-render
+    form-inner-button-action: inherit
+    uri-query-encoding: percent-decoded-match
+    form-default-ssot: directive
+    destructive-action: two-step-preview
+---
+
+## Navigation
+
+- [Dashboard](/dashboard) · current
+- [Users](/users)
+- [Roles](/roles)
+- [Audit log](/audit)
+- [Reports](/reports)
+
+# Admin dashboard
+
+Workspace overview. Counts are cached for 60 seconds — see the [Markdown view](/dashboard.md) for the AI-facing version.
+
+> [!NOTE]
+> Showing data up to 2026-04-17 09:15 UTC.
+
+:::card{title="Total users"}
+## 1,284
+
++12 this week.
+:::
+
+:::card{title="Active today"}
+## 318
+
+Unique sign-ins in the last 24 hours.
+:::
+
+:::card{title="Pending invites"}
+## 7
+
+Invites sent but not yet accepted.
+:::
+
+::::card{title="Recent activity"}
+:::table
+| id       | When             | Actor              | Action     | Target      | Actions                                 |
+| :------- | :--------------- | :----------------- | :--------- | :---------- | :-------------------------------------- |
+| evt\_a01 | 2026-04-17 09:14 | alice\@example.com | updateUser | u\_bob\_01  | [Open](mcp://tool/viewEvent?id=evt_a01) |
+| evt\_a02 | 2026-04-17 09:02 | alice\@example.com | createUser | u\_dave\_02 | [Open](mcp://tool/viewEvent?id=evt_a02) |
+| evt\_a03 | 2026-04-16 22:41 | system             | rotateKey  | api-key-eu  | [Open](mcp://tool/viewEvent?id=evt_a03) |
+| evt\_a04 | 2026-04-16 17:03 | carol\@example.com | viewAudit  | 2026-Q1     | [Open](mcp://tool/viewEvent?id=evt_a04) |
+:::
+::::
+
+::button[Refresh dashboard]{action="refreshDashboard"}
+
+[Refresh dashboard](mcp://tool/refreshDashboard "fallback")
