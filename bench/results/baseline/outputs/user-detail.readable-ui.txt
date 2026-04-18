@@ -27,7 +27,7 @@ breadcrumb:
 paths:
   view: /users/u_alice_01
   markdown: /users/u_alice_01.md
-updatedAt: 2026-04-18T06:06:36.592Z
+updatedAt: 2026-04-18T00:00:00.000Z
 tools:
   - name: listUsers
     title: List users
