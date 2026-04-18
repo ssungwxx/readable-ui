@@ -46,6 +46,7 @@
 - [0022 — 데이터 헤비 Table 의 fenced payload 분리 (`readable-ui:data` JSONL)](./adr/0022-table-payload-fenced.md)
 - [0023 — Benchmark environment (readable-ui · ax-tree · headful-md 3중 비교)](./adr/0023-benchmark-environment.md)
 - [0024 — Admin metric·progress·descriptions·breadcrumb 관용구](./adr/0024-admin-metric-and-hierarchy-components.md)
+- [0025 — Tier 3 컨테이너 컴포넌트 v1 편입 (Section · Steps · Tabs · Accordion · Split)](./adr/0025-tier3-container-components-activation.md)
 
 ## Open Decisions
 

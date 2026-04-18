@@ -2,7 +2,7 @@
 
 readable-ui v1에서 허용되는 컴포넌트 전체 목록과 각 컴포넌트의 Markdown 직렬화 규약을 정의한다.
 
-> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0022](../adr/0022-table-payload-fenced.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md)
+> 결정 근거: [ADR 0007](../adr/0007-layout-and-component-catalog.md), [ADR 0009](../adr/0009-envelope-extensions-and-serialization-refinements.md), [ADR 0011](../adr/0011-sidebar-and-topbar-page-layouts.md), [ADR 0015](../adr/0015-table-as-container-directive.md), [ADR 0021](../adr/0021-detail-page-layout.md), [ADR 0022](../adr/0022-table-payload-fenced.md), [ADR 0024](../adr/0024-admin-metric-and-hierarchy-components.md), [ADR 0025](../adr/0025-tier3-container-components-activation.md)
 
 ## 카탈로그 밖은 전부 금지
 
@@ -197,12 +197,24 @@ CommonMark 0.30 §4.5 의 info string 정의를 그대로 따르며, 콜론(`:`)
 
 ## Container (자식 블록 flow)
 
-### Section
+### Section (v1 편입: ADR 0025)
 
 - Markdown: Heading + 하위 블록. directive 없이 heading으로만 경계 표현.
 - HTML: `<section>`
-- Props: `title: string`, `level?: 1~6` (자동 추론 가능)
-- 직렬화: `### {title}\n\n{children}`
+- Props:
+  ```ts
+  interface SectionProps {
+    title: string;
+    level: 1 | 2 | 3 | 4 | 5 | 6;  // 필수. 자동 추론은 v2 defer (ADR 0025 §1).
+    children: ReactNode;
+  }
+  ```
+- 직렬화: `### {title}\n\n{children}` (level에 따라 `#` 개수 변동)
+- Fallback 규약: Section 자체는 heading + block 이므로 별도 fallback 병기 없음. 모든 Markdown 뷰어 호환.
+- 엣지 케이스:
+  - `level` 을 지정하지 않으면 TypeScript 컴파일 오류 — v1 에서는 필수 prop.
+  - 중첩 Section 은 저자가 레벨을 명시적으로 올려야 함 (`level={3}` 내부 `level={4}`).
+  - Tabs / Accordion 내부에 Section 을 넣으면 Markdown 의 heading 레벨이 외부 문서 outline 과 어긋날 수 있다 — 저자 책임.
 
 ### Card
 
@@ -277,9 +289,10 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - **셀 이스케이프 수용**: `u\_alice\_01`, `bob\@example.com` 등은 GFM round-trip에서 원문 복원 — 정상 동작. tool 호출 인자는 URI query에서 추출.
 - Generic 사용: `<Table<User> columns={...} rows={users} tool="listUsers" page={2} of={7} .../>`.
 
-### Steps
+### Steps (v1 편입: ADR 0025)
 
-- Markdown: task list로 fallback 가능하나 기본은 container directive
+- Markdown: container directive + 내부 leaf directive 시퀀스.
+- HTML: `<div>` + `<div>` 스텝 행들 (done/current/pending 팔레트 각색).
 - 직렬화:
   ```
   :::steps
@@ -288,51 +301,127 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
   ::step[Finish setup]{status=pending}
   :::
   ```
-- Props each step: `label: string`, `status: done|current|pending`
+- Props:
+  ```ts
+  interface StepProps {
+    label: string;   // ::step[label] body
+    status: "done" | "current" | "pending";
+  }
+  interface StepsProps {
+    children: ReactNode;  // Step 컴포넌트들
+  }
+  ```
+- `status` 팔레트 (Alert 계열 정합):
+  - `done` → `tip` 팔레트 (녹색)
+  - `current` → `note` 팔레트 (파랑)
+  - `pending` → 회색 (neutral)
+- 예약어 재사용: `status` (이미 예약됨). 신규 예약 없음.
+- Fallback 규약: `:::steps` 는 directive-미지원 뷰어에서 fallback 병기가 없음 — directive 블록이 무시될 경우 내용 소실. v1 에서 acceptable (readable-ui 파서 우선).
+- 엣지 케이스:
+  - `Steps` 내부에 `Step` 외 컴포넌트가 들어가면 Markdown 에 그대로 emit 됨.
+  - `status` 값이 `done|current|pending` 외이면 TypeScript 컴파일 오류.
 
-### Tabs
+### Tabs (v1 편입: ADR 0025)
 
-- Markdown: 전부 flush (ADR 0007 §4).
+- Markdown: 전부 flush (ADR 0007 §4). 정보 손실 없음.
+- HTML: 탭 바 + 활성 탭 패널만 표시 (나머지 `hidden`). `useState` 클라이언트 상태. SSR 초기: 첫 번째 탭 활성.
 - 직렬화:
   ```
   :::tabs
   ::tab[Info]
-  ...
+
+  tab content…
+
   ::tab[Security]
-  ...
+
+  tab content…
+
   :::
   ```
-- UI: 현재 활성 탭만 표시, 나머지 숨김.
-- AI: directive를 무시해도 본문 heading으로 전부 접근 가능 (fallback 병기).
+- Props:
+  ```ts
+  interface TabProps {
+    label: string;    // ::tab[label] body
+    children: ReactNode;
+  }
+  interface TabsProps {
+    children: ReactNode;  // Tab 컴포넌트들
+  }
+  ```
+- ADR 0007 §4 flush 규약: `::tab[label]` marker leaf directive + children 을 순서대로 emit. 활성 탭 정보는 Markdown 에 없음 — 이는 의도적 설계 (AI 가 전체 탭 내용에 접근해야 한다).
+- 예약어: `label` (이미 예약됨). 신규 예약 없음.
+- Fallback 규약: 별도 fallback paragraph 없음. `:::tabs` 미파서 뷰어에서 내용이 sequential text 로 흘러나옴 — 이것이 ADR 0007 "전부 flush" 의 의도.
+- RSC 주의: `useState` 사용. Next.js App Router RSC 에서 사용 시 `"use client"` 경계 필요.
+- 엣지 케이스:
+  - `active` prop 은 v1 에서 지원하지 않음 — 초기 활성 탭 선택은 항상 첫 번째 (index 0). v2 `defaultActive` 검토.
+  - `Tabs` 내부에 `Tab` 외 컴포넌트가 있으면 탭 바에 표시되지 않지만 Markdown 에는 emit 됨.
 
-### Accordion
+### Accordion (v1 편입: ADR 0025)
 
-- Markdown: 전부 "열린 상태"로 직렬화.
+- Markdown: 전부 "열린 상태"로 직렬화. 정보 손실 없음.
+- HTML: 접기/펼치기 패널 목록. `useState` 클라이언트 상태. SSR 초기: 첫 번째 패널 열림.
 - 직렬화:
   ```
   :::accordion
   ::panel[Billing]
-  ...
+
+  billing content…
+
   ::panel[Notifications]
-  ...
+
+  notifications content…
+
   :::
   ```
+- Props:
+  ```ts
+  interface PanelProps {
+    label: string;    // ::panel[label] body
+    children: ReactNode;
+  }
+  interface AccordionProps {
+    children: ReactNode;  // Panel 컴포넌트들
+  }
+  ```
+- ADR 0007 §4 flush 규약: `::panel[label]` marker leaf directive + children 순서대로 emit. 모든 패널 "열린 상태" 직렬화 — closed 패널도 Markdown 에는 모두 표시.
+- `default open` 상태: 첫 번째 패널만 기본 열림. 나머지는 접힘. v1 에서 저자가 바꾸려면 컴포넌트 직접 수정 필요.
+- 예약어: `label` (이미 예약됨). 신규 예약 없음.
+- RSC 주의: `useState` 사용. Next.js App Router RSC 에서 사용 시 `"use client"` 경계 필요.
+- 엣지 케이스:
+  - `Accordion` 내부에 `Panel` 외 컴포넌트가 있으면 패널 목록에서 제외되지만 Markdown 에는 emit 됨.
 
-### Split
+### Split (v1 편입: ADR 0025)
 
-- Markdown: 왼쪽 셀 → 오른쪽 셀 세로 나열. 배치 정보는 버림.
+- Markdown: 왼쪽 셀 → 오른쪽 셀 세로 나열. 배치(좌/우) 정보는 버림 (ADR 0007 §5).
+- HTML: CSS grid 2열 배치 (`grid-cols-2`). 순수 시각 효과.
 - 직렬화:
   ```
-  :::split{cols=2}
-  ::::cell
+  ::::split{cols=2}
+  :::cell
   left content
-  ::::
-  ::::cell
-  right content
-  ::::
   :::
+  :::cell
+  right content
+  :::
+  ::::
   ```
-- Note: v1에서 `cols=2`만 허용. 3열 이상은 error.
+- Props:
+  ```ts
+  interface CellProps {
+    children: ReactNode;
+  }
+  interface SplitProps {
+    cols?: 2;          // v1에서 2만 허용. default 2.
+    children: ReactNode;  // Cell 컴포넌트들
+  }
+  ```
+- **외부 container 의 콜론 수는 내부보다 엄격히 많아야 한다 (CommonMark directive 중첩 규칙). 엔진이 자동 보장한다.** 위 샘플은 최소 depth 기준(`::::split` 4개 → `:::cell` 3개). Cell 안에 Card·Steps 등이 중첩되면 엔진이 전체 depth 를 자동 상승시킨다.
+- engine 확장 없음: `ctx.walk(children)` 이 `Cell.toMarkdown` 을 호출하고, `Split.toMarkdown` 이 이 결과를 `containerDirective.children` 에 포함. `mdast-util-directive` 가 fence depth 를 실측 기반으로 자동 계산한다.
+- `cols=2` 만 v1 허용. `cols=3` 이상은 TypeScript 타입 제약으로 방지.
+- Fallback 규약: directive 미지원 뷰어(예: GitHub)에서 `::::split{cols=2}` 마커가 리터럴 텍스트로 드러날 수 있다. 셀 내용은 순서대로 세로 나열 — 배치 정보 손실은 의도적 (ADR 0007 §5). 단순 나열이 필요한 환경에서는 Card 2개 나열을 대안으로 사용.
+- 엣지 케이스:
+  - `Split` 내부에 `Cell` 외 컴포넌트가 있으면 Markdown 에 그대로 emit 됨.
+  - 셀이 1개뿐이면 HTML 에서도 1열로 표시됨.
 
 ## Interactive (directive primitives)
 
@@ -452,4 +541,4 @@ admin 목록 UI의 핵심 컴포넌트. Container directive로 pagination/sort/f
 - **Radio/Checkbox 그룹 컨테이너** — 현재 개별 directive. 그룹 필요성 재검토 대상.
 - **Media 컴포넌트** (Video, Audio) — v1 미포함.
 - **Empty state** 결정 완료 (ADR 0019). **Loading / Error state** 표현 — 후속 ADR.
-- **v1 구현 유예 (Tier 3)**: Section, Steps, Tabs, Accordion, Split 5종은 spec 카탈로그에 등재되어 있으나 v1에서 구현을 유예한다. 기존 관용구(Card/Heading 나열)로 대체 가능. 구현 시 후속 ADR이 선행한다.
+- **v1 편입 (ADR 0025)**: Section, Steps, Tabs, Accordion, Split 5종이 ADR 0025 에 의해 v1 에 편입됐다. 위 각 항목에 Props 시그니처·직렬화·엣지 케이스가 정의되어 있다.

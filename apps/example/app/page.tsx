@@ -51,6 +51,20 @@ const routes: SampleRoute[] = [
     layout: "detail",
     blurb: "Single-resource view — breadcrumb, Descriptions profile/meta rail, destructive footer.",
   },
+  {
+    href: "/components",
+    mdHref: "/components.md",
+    title: "Components (Tier 3 — Section, Steps, Split)",
+    layout: "sidebar",
+    blurb: "ADR 0025 — Section heading wrapper, Steps progress sequence, Split 2-column layout.",
+  },
+  {
+    href: "/settings",
+    mdHref: "/settings.md",
+    title: "Settings (Tier 3 — Tabs, Accordion)",
+    layout: "sidebar",
+    blurb: "ADR 0025 — Tabs tab-switcher and Accordion collapsible panels with client-state.",
+  },
 ];
 
 export default function Home() {

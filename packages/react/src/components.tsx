@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import * as React from "react";
 import { defineDualComponent } from "./index.js";
 import {
   serializeJsonlPayload,
@@ -1830,3 +1831,359 @@ export function Descriptions({ title, items }: DescriptionsProps): ReactNode {
     </Card>
   );
 }
+
+// ============================================================================
+// ADR 0025 — Tier 3 container components activation
+// Section · Steps · Tabs · Accordion · Split
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Section
+// ----------------------------------------------------------------------------
+
+export interface SectionProps {
+  title: string;
+  /** Required. ADR 0025 §1: automatic level inference is v2. Author must specify. */
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  children: ReactNode;
+}
+
+export const Section = defineDualComponent<SectionProps>({
+  name: "section",
+  render: ({ title, level, children }) => {
+    const Tag = `h${level}` as "h2";
+    const headingCls =
+      level === 1
+        ? "relative text-3xl font-bold tracking-tight text-slate-900"
+        : level === 2
+          ? "text-2xl font-semibold tracking-tight text-slate-900"
+          : "text-xl font-semibold text-slate-900";
+    return (
+      <section className="space-y-4">
+        <Tag className={headingCls}>{title}</Tag>
+        <div className="space-y-3">{children}</div>
+      </section>
+    );
+  },
+  toMarkdown: ({ title, level, children }, ctx) => {
+    // ADR 0025 §1: Section serializes as Heading + flat children. No container directive.
+    const heading: MdNode = {
+      type: "heading",
+      depth: level,
+      children: [{ type: "text", value: title } as MdNode] as never,
+    };
+    const childNodes = ctx.walk(children);
+    return [heading, ...childNodes];
+  },
+});
+
+// ----------------------------------------------------------------------------
+// Steps + Step
+// ----------------------------------------------------------------------------
+
+export interface StepProps {
+  label: string;
+  status: "done" | "current" | "pending";
+}
+
+export const Step = defineDualComponent<StepProps>({
+  name: "step",
+  render: ({ label, status }) => {
+    const palette: Record<StepProps["status"], { ring: string; bg: string; text: string; dot: string }> = {
+      done: {
+        ring: "ring-emerald-200",
+        bg: "bg-emerald-50",
+        text: "text-emerald-800",
+        dot: "bg-emerald-500",
+      },
+      current: {
+        ring: "ring-blue-200",
+        bg: "bg-blue-50",
+        text: "text-blue-800",
+        dot: "bg-blue-500",
+      },
+      pending: {
+        ring: "ring-slate-200",
+        bg: "bg-slate-50",
+        text: "text-slate-500",
+        dot: "bg-slate-300",
+      },
+    };
+    const p = palette[status];
+    const icon =
+      status === "done" ? (
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      ) : status === "current" ? (
+        <span className="h-2 w-2 rounded-full bg-blue-500" aria-hidden="true" />
+      ) : (
+        <span className="h-2 w-2 rounded-full bg-slate-300" aria-hidden="true" />
+      );
+    return (
+      <div className={`flex items-center gap-3 rounded-lg px-4 py-2.5 ring-1 ${p.ring} ${p.bg}`}>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${p.dot}`}>
+          {icon}
+        </span>
+        <span className={`text-sm font-medium ${p.text}`}>{label}</span>
+        <span className={`ml-auto text-[10px] font-semibold uppercase tracking-wider ${p.text} opacity-70`}>
+          {status}
+        </span>
+      </div>
+    );
+  },
+  toMarkdown: ({ label, status }) => ({
+    type: "leafDirective",
+    name: "step",
+    attributes: { status },
+    children: [{ type: "text", value: label } as MdNode] as never,
+  }),
+});
+
+export interface StepsProps {
+  children: ReactNode;
+}
+
+export const Steps = defineDualComponent<StepsProps>({
+  name: "steps",
+  render: ({ children }) => (
+    <div className="flex flex-col gap-2">{children}</div>
+  ),
+  toMarkdown: ({ children }, ctx) => ({
+    type: "containerDirective",
+    name: "steps",
+    attributes: {},
+    children: ctx.walk(children) as never,
+  }),
+});
+
+// ----------------------------------------------------------------------------
+// Tabs + Tab
+// ----------------------------------------------------------------------------
+
+export interface TabProps {
+  label: string;
+  children: ReactNode;
+}
+
+export const Tab = defineDualComponent<TabProps>({
+  name: "tab",
+  render: ({ children }) => <div>{children}</div>,
+  toMarkdown: ({ label, children }, ctx) => {
+    // ADR 0025 §3 / ADR 0007 §4 flush rule: emit the tab marker directive + children.
+    const marker: MdNode = {
+      type: "leafDirective",
+      name: "tab",
+      attributes: {},
+      children: [{ type: "text", value: label } as MdNode] as never,
+    };
+    return [marker, ...ctx.walk(children)];
+  },
+});
+
+export interface TabsProps {
+  children: ReactNode;
+}
+
+/** ADR 0025 §3: Client-side state. Must be used inside a "use client" boundary in RSC environments. */
+export const Tabs = defineDualComponent<TabsProps>({
+  name: "tabs",
+  render: ({ children }) => {
+    // Collect Tab children for label-based tab bar.
+    const childArray = Array.isArray(children) ? children : children != null ? [children] : [];
+    const tabs = childArray.filter(
+      (c): c is { props: TabProps } =>
+        c != null &&
+        typeof c === "object" &&
+        "props" in (c as object) &&
+        (c as { props?: TabProps }).props?.label != null
+    );
+
+    const [activeIdx, setActiveIdx] = React.useState(0);
+
+    return (
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        {/* Tab bar */}
+        <div className="flex border-b border-slate-200/80 bg-slate-50/50">
+          {tabs.map((tab, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setActiveIdx(idx)}
+              className={
+                idx === activeIdx
+                  ? "border-b-2 border-blue-500 px-5 py-3 text-sm font-medium text-blue-700"
+                  : "px-5 py-3 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+              }
+            >
+              {tab.props.label}
+            </button>
+          ))}
+        </div>
+        {/* Active tab content */}
+        <div className="p-5">
+          {tabs.map((tab, idx) => (
+            <div key={idx} className={idx === activeIdx ? "block" : "hidden"}>
+              {tab.props.children}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+  toMarkdown: ({ children }, ctx) => ({
+    // ADR 0007 §4 + ADR 0025 §3: all tabs flushed in full. No information loss.
+    type: "containerDirective",
+    name: "tabs",
+    attributes: {},
+    children: ctx.walk(children) as never,
+  }),
+});
+
+// ----------------------------------------------------------------------------
+// Accordion + Panel
+// ----------------------------------------------------------------------------
+
+export interface PanelProps {
+  label: string;
+  children: ReactNode;
+}
+
+export const Panel = defineDualComponent<PanelProps>({
+  name: "panel",
+  render: ({ children }) => <div>{children}</div>,
+  toMarkdown: ({ label, children }, ctx) => {
+    // ADR 0025 §4 / ADR 0007 §4: all panels flushed as "open". Emit marker + children.
+    const marker: MdNode = {
+      type: "leafDirective",
+      name: "panel",
+      attributes: {},
+      children: [{ type: "text", value: label } as MdNode] as never,
+    };
+    return [marker, ...ctx.walk(children)];
+  },
+});
+
+export interface AccordionProps {
+  children: ReactNode;
+}
+
+/** ADR 0025 §4: Client-side state. Must be used inside a "use client" boundary in RSC environments. */
+export const Accordion = defineDualComponent<AccordionProps>({
+  name: "accordion",
+  render: ({ children }) => {
+    const childArray = Array.isArray(children) ? children : children != null ? [children] : [];
+    const panels = childArray.filter(
+      (c): c is { props: PanelProps } =>
+        c != null &&
+        typeof c === "object" &&
+        "props" in (c as object) &&
+        (c as { props?: PanelProps }).props?.label != null
+    );
+
+    // ADR 0025 §4: default — first panel open, rest closed.
+    const [openSet, setOpenSet] = React.useState<Set<number>>(new Set([0]));
+
+    const toggle = (idx: number) => {
+      setOpenSet((prev) => {
+        const next = new Set(prev);
+        if (next.has(idx)) {
+          next.delete(idx);
+        } else {
+          next.add(idx);
+        }
+        return next;
+      });
+    };
+
+    return (
+      <div className="divide-y divide-slate-200/80 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        {panels.map((panel, idx) => {
+          const isOpen = openSet.has(idx);
+          return (
+            <div key={idx}>
+              <button
+                type="button"
+                onClick={() => toggle(idx)}
+                className="flex w-full items-center justify-between px-5 py-3.5 text-sm font-medium text-slate-800 hover:bg-slate-50 transition-colors"
+              >
+                <span>{panel.props.label}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {isOpen ? (
+                <div className="px-5 pb-4 pt-1 text-sm text-slate-700">
+                  {panel.props.children}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  },
+  toMarkdown: ({ children }, ctx) => ({
+    // ADR 0007 §4 + ADR 0025 §4: all panels serialized as open. No information loss.
+    type: "containerDirective",
+    name: "accordion",
+    attributes: {},
+    children: ctx.walk(children) as never,
+  }),
+});
+
+// ----------------------------------------------------------------------------
+// Split + Cell
+// ----------------------------------------------------------------------------
+
+export interface CellProps {
+  children: ReactNode;
+}
+
+/** Internal child of Split. ADR 0025 §5: Cell is Split-internal; standalone use is not meaningful. */
+export const Cell = defineDualComponent<CellProps>({
+  name: "cell",
+  render: ({ children }) => (
+    <div className="min-w-0">{children}</div>
+  ),
+  toMarkdown: ({ children }, ctx) => ({
+    // ADR 0025 §5: ::::cell uses 4 colons (nested container directive).
+    // mdast-util-directive serializes nested containerDirective with +1 fence depth.
+    type: "containerDirective",
+    name: "cell",
+    attributes: {},
+    children: ctx.walk(children) as never,
+  }),
+});
+
+export interface SplitProps {
+  /** ADR 0025 §5: only cols=2 is valid in v1. Default: 2. */
+  cols?: 2;
+  children: ReactNode;
+}
+
+export const Split = defineDualComponent<SplitProps>({
+  name: "split",
+  render: ({ cols: _cols = 2, children }) => (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {children}
+    </div>
+  ),
+  toMarkdown: ({ cols = 2, children }, ctx) => ({
+    type: "containerDirective",
+    name: "split",
+    attributes: { cols: String(cols) },
+    children: ctx.walk(children) as never,
+  }),
+});

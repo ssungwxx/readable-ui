@@ -6,6 +6,8 @@ export const adminNav: NavItem[] = [
   { label: "Roles", href: "/roles" },
   { label: "Audit log", href: "/audit" },
   { label: "Reports", href: "/reports" },
+  { label: "Components", href: "/components" },
+  { label: "Settings", href: "/settings" },
 ];
 
 export function withActive(href: string): NavItem[] {
