@@ -1,6 +1,6 @@
 # ADR 0020 — CRUD idiom gaps closure: 2단계 삭제, 행 상태 CodeSpan 자동 wrap, EmptyState fallback, destructive-action convention
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-04-18
 - Amends: [ADR 0019](./0019-crud-action-idioms.md)
 - Related: [ADR 0007](./0007-layout-and-component-catalog.md), [ADR 0012](./0012-dual-render-convention-signals.md), [ADR 0013](./0013-suppress-form-inner-button-action.md), [ADR 0015](./0015-table-as-container-directive.md), [ADR 0016](./0016-form-default-value-convention.md), [ADR 0018](./0018-detail-view-convention.md)
