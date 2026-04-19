@@ -50,6 +50,7 @@
 - [0025 — Tier 3 컨테이너 컴포넌트 v1 편입 (Section · Steps · Tabs · Accordion · Split)](./adr/0025-tier3-container-components-activation.md)
 - [0026 — `definePage` / `defineNav` DX 레이어](./adr/0026-define-page-dx-layer.md)
 - [0028 — 컴파일 타임 tool 참조 검증 (typed proxy via render 2번째 인자)](./adr/0028-compile-time-tool-validation.md)
+- [0030 — README 다국어 정책: 한국어 default + 영어 병행](./adr/0030-readme-multilingual.md)
 
 ## Open Decisions
 
